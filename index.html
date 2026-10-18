@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Dinner Quiz</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🍽️ Family Dinner Quiz</h1>
+
+        <!-- Setup Screen -->
+        <section id="setup-screen">
+            <h2>Player Setup</h2>
+            <p>Enter up to 4 players (leave blank if playing as a group):</p>
+            <div class="player-inputs">
+                <input type="text" id="p1" placeholder="Player 1 Name">
+                <input type="text" id="p2" placeholder="Player 2 Name">
+                <input type="text" id="p3" placeholder="Player 3 Name">
+                <input type="text" id="p4" placeholder="Player 4 Name">
+            </div>
+            <button class="btn main-btn" onclick="startGame()">Start Quiz</button>
+        </section>
+
+        <!-- Quiz Screen -->
+        <section id="quiz-screen" class="hidden">
+            <div class="quiz-header">
+                <span id="round-info">Round 1</span>
+                <span id="question-tracker">Question 1/5</span>
+            </div>
+
+            <div class="card">
+                <span id="category-badge" class="badge">General</span>
+                <h2 id="question-text">Question goes here?</h2>
+                <button class="btn secondary-btn" onclick="toggleAnswer()">Show Answer</button>
+                <div id="answer-box" class="answer-box hidden">
+                    <p id="answer-text">Answer goes here</p>
+                </div>
+            </div>
+
+            <!-- Score Awarding -->
+            <div id="score-buttons" class="score-buttons">
+                <h3>Award Point To:</h3>
+                <div id="player-score-controls" class="player-grid"></div>
+            </div>
+
+            <button id="next-btn" class="btn main-btn" onclick="nextQuestion()">Next Question ➡️</button>
+        </section>
+
+        <!-- Round Summary Screen -->
+        <section id="summary-screen" class="hidden">
+            <h2>Round Complete! 🎉</h2>
+            <div id="scoreboard"></div>
+            <button class="btn main-btn" onclick="startNextRound()">Continue to Next Round</button>
+        </section>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
