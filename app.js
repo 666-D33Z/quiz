@@ -1,47 +1,37 @@
-// --- AUDIO SYNTHESIZER (Pops, Bangs, Whistles & Chimes) ---
+// --- AUDIO SYNTHESIZER ---
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 function playSound(type) {
-    if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.connect(gain);
     gain.connect(audioCtx.destination);
-
     const now = audioCtx.currentTime;
 
     if (type === 'click') {
-        // Crisp pop/click
         osc.type = 'sine';
         osc.frequency.setValueAtTime(600, now);
         osc.frequency.exponentialRampToValueAtTime(200, now + 0.05);
         gain.gain.setValueAtTime(0.3, now);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
-        osc.start(now);
-        osc.stop(now + 0.05);
-    } else if (type === 'point') {
-        // High-pitch score chime
+        osc.start(now); osc.stop(now + 0.05);
+    } else if (type === 'correct') {
         osc.type = 'triangle';
-        osc.frequency.setValueAtTime(523.25, now); // C5
-        osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
-        osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+        osc.frequency.setValueAtTime(523.25, now);
+        osc.frequency.setValueAtTime(659.25, now + 0.08);
+        osc.frequency.setValueAtTime(783.99, now + 0.16);
         gain.gain.setValueAtTime(0.4, now);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-        osc.start(now);
-        osc.stop(now + 0.3);
-    } else if (type === 'reveal') {
-        // Whoosh / Whistle reveal
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(300, now);
-        osc.frequency.exponentialRampToValueAtTime(1200, now + 0.2);
-        gain.gain.setValueAtTime(0.2, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-        osc.start(now);
-        osc.stop(now + 0.2);
+        osc.start(now); osc.stop(now + 0.3);
+    } else if (type === 'wrong') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.setValueAtTime(100, now + 0.15);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+        osc.start(now); osc.stop(now + 0.3);
     } else if (type === 'fanfare') {
-        // Round Complete Fanfare
         [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
             const subOsc = audioCtx.createOscillator();
             const subGain = audioCtx.createGain();
@@ -75,14 +65,12 @@ function startGame() {
             players.push({ name: name, score: 0 });
         }
     }
-
     if (players.length === 0) {
         players.push({ name: "⚡ SQUAD", score: 0 });
     }
 
     document.getElementById('setup-screen').classList.add('hidden');
     document.getElementById('quiz-screen').classList.remove('hidden');
-    
     startNewRound();
 }
 
@@ -105,20 +93,16 @@ function startNewRound() {
 
 function loadQuestion() {
     let q = currentRoundQuestions[currentQuestionIndex];
-    let typeLabel = q.type === 'list' ? '📋 LIST CHALLENGE' : '❓ TRIVIA';
+    let typeLabel = q.type === 'list' ? '📋 LIST BATTLE' : '❓ MULTIPLE CHOICE';
     
-    // Trigger pop animation on question card
     const card = document.getElementById('question-card');
     card.classList.remove('pop-in');
-    void card.offsetWidth; // Force re-flow
+    void card.offsetWidth;
     card.classList.add('pop-in');
 
     document.getElementById('category-badge').innerText = q.category;
     document.getElementById('type-badge').innerText = typeLabel;
     document.getElementById('question-text').innerText = q.question;
-    document.getElementById('answer-text').innerText = q.answer;
-    document.getElementById('answer-box').classList.add('hidden');
-    document.getElementById('reveal-btn').style.display = 'block';
     
     document.getElementById('round-info').innerText = `ROUND ${currentRound} (${currentDifficulty.toUpperCase()})`;
     document.getElementById('question-tracker').innerText = `QUESTION ${currentQuestionIndex + 1}/${questionsPerRound}`;
@@ -126,33 +110,85 @@ function loadQuestion() {
     let progressPercent = ((currentQuestionIndex) / questionsPerRound) * 100;
     document.getElementById('progress-bar').style.width = `${progressPercent}%`;
 
-    renderPlayerScoreButtons();
+    const mcContainer = document.getElementById('mc-container');
+    const listContainer = document.getElementById('list-container');
+    const nextBtn = document.getElementById('next-btn');
+
+    if (q.type === 'mc') {
+        mcContainer.classList.remove('hidden');
+        listContainer.classList.add('hidden');
+        nextBtn.classList.add('hidden'); // Hidden until an option is picked
+        renderMultipleChoice(q);
+    } else {
+        mcContainer.classList.add('hidden');
+        listContainer.classList.remove('hidden');
+        nextBtn.classList.remove('hidden'); // Show next button for list rounds
+        renderListScoring(q);
+    }
 }
 
-function toggleAnswer() {
-    playSound('reveal');
-    document.getElementById('answer-box').classList.remove('hidden');
-    document.getElementById('reveal-btn').style.display = 'none';
+function renderMultipleChoice(q) {
+    const container = document.getElementById('mc-container');
+    container.innerHTML = '';
+    
+    // Hide score controls during MC questions (auto-awarded to who clicks or group)
+    document.getElementById('score-section').style.display = 'none';
+
+    let shuffledOptions = [...q.options];
+    shuffleArray(shuffledOptions);
+
+    shuffledOptions.forEach(opt => {
+        let btn = document.createElement('button');
+        btn.className = 'mc-btn';
+        btn.innerText = opt;
+        btn.onclick = () => {
+            // Disable all option buttons after click
+            let allBtns = container.querySelectorAll('.mc-btn');
+            allBtns.forEach(b => b.disabled = true);
+
+            if (opt === q.answer) {
+                btn.classList.add('correct');
+                playSound('correct');
+                players[0].score += 1; // Award point to Player 1 or group
+                confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+            } else {
+                btn.classList.add('wrong');
+                playSound('wrong');
+                // Highlight the correct one
+                allBtns.forEach(b => {
+                    if (b.innerText === q.answer) b.classList.add('correct');
+                });
+            }
+            // Show Next Question button
+            document.getElementById('next-btn').classList.remove('hidden');
+        };
+        container.appendChild(btn);
+    });
 }
 
-function renderPlayerScoreButtons() {
+function toggleListAnswer() {
+    playSound('click');
+    document.getElementById('list-answer-box').classList.remove('hidden');
+    document.getElementById('list-answer-text').innerText = currentRoundQuestions[currentQuestionIndex].answer;
+}
+
+function renderListScoring(q) {
+    document.getElementById('score-section').style.display = 'block';
     const container = document.getElementById('player-score-controls');
     container.innerHTML = '';
     
+    document.getElementById('score-section').querySelector('h3').innerText = `🏆 AWARD POINTS (Got all ${q.maxPoints}? Tap multiple times!):`;
+
     players.forEach((p) => {
         let btn = document.createElement('button');
         btn.className = 'score-btn';
-        btn.innerText = `${p.name} (+1)`;
+        btn.innerText = `${p.name} (+1 Pt)`;
         btn.onclick = () => {
             p.score += 1;
             btn.classList.add('active');
-            playSound('point');
-            // Burst confetti when point is awarded!
-            confetti({
-                particleCount: 40,
-                spread: 60,
-                origin: { y: 0.8 }
-            });
+            playSound('correct');
+            confetti({ particleCount: 30, spread: 50, origin: { y: 0.8 } });
+            setTimeout(() => btn.classList.remove('active'), 300);
         };
         container.appendChild(btn);
     });
@@ -171,19 +207,13 @@ function nextQuestion() {
 
 function showSummary() {
     playSound('fanfare');
-    // Massive confetti cannon on round finish!
-    confetti({
-        particleCount: 120,
-        spread: 100,
-        origin: { y: 0.5 }
-    });
+    confetti({ particleCount: 120, spread: 100, origin: { y: 0.5 } });
 
     document.getElementById('quiz-screen').classList.add('hidden');
     document.getElementById('summary-screen').classList.remove('hidden');
 
     let sb = document.getElementById('scoreboard');
     let sortedPlayers = [...players].sort((a, b) => b.score - a.score);
-    
     sb.innerHTML = '<ul>' + sortedPlayers.map(p => `<li><span>👑 ${p.name}</span> <span>${p.score} PTS</span></li>`).join('') + '</ul>';
 }
 
@@ -195,7 +225,6 @@ function startNextRound() {
 
     document.getElementById('summary-screen').classList.add('hidden');
     document.getElementById('quiz-screen').classList.remove('hidden');
-    
     startNewRound();
 }
 
