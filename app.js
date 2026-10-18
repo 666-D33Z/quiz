@@ -32,7 +32,6 @@ let currentQuestionIndex = 0;
 let currentRound = 1;
 const questionsPerRound = 5;
 
-// Load permanently solved question strings from browser memory so they NEVER repeat
 let solvedQuestions = JSON.parse(localStorage.getItem('solvedTriviaQuestions')) || [];
 
 function startGame() {
@@ -50,64 +49,101 @@ function startGame() {
 
 async function startNewRound() {
     currentQuestionIndex = 0;
-    document.getElementById('question-text').innerText = "⚡ Fetching fresh questions from the global database...";
+    document.getElementById('question-text').innerText = "⚡ Preparing round (fetching live trivia & generating list battles)...";
     document.getElementById('mc-container').innerHTML = '';
 
     try {
-        // Fetch 10 questions at a time from the live API to ensure we have enough fresh ones
         let response = await fetch('https://opentdb.com/api.php?amount=10&type=multiple');
         let data = await response.json();
 
         if (data.results && data.results.length > 0) {
-            // Filter out any questions the family has already successfully solved in the past!
             let freshQuestions = data.results.filter(q => !solvedQuestions.includes(q.question));
+            if (freshQuestions.length < 4) freshQuestions = data.results;
 
-            // If somehow all fetched questions were already solved, fetch more or use what we got
-            if (freshQuestions.length < questionsPerRound) {
-                freshQuestions = data.results; // Fallback if pool is tight
-            }
-
-            currentRoundQuestions = freshQuestions.slice(0, questionsPerRound).map(q => {
-                // Decode HTML entities from API text (e.g., &quot; -> ")
-                let decodedQuestion = decodeHTML(q.question);
+            // Map 4 live trivia questions
+            let triviaBatch = freshQuestions.slice(0, 4).map(q => {
                 let decodedCorrect = decodeHTML(q.correct_answer);
                 let decodedIncorrects = q.incorrect_answers.map(ans => decodeHTML(ans));
-
                 return {
+                    type: "mc",
                     category: decodeHTML(q.category),
-                    question: decodedQuestion,
+                    question: decodeHTML(q.question),
                     answer: decodedCorrect,
                     options: [...decodedIncorrects, decodedCorrect]
                 };
             });
 
+            // Generate 1 Algorithmic List Challenge for the round!
+            let listChallenge = generateRandomListChallenge();
+
+            // Combine them into a 5-question round and shuffle their positions
+            currentRoundQuestions = [...triviaBatch, listChallenge];
+            shuffleArray(currentRoundQuestions);
+
             loadQuestion();
         } else {
-            document.getElementById('question-text').innerText = "⚠️ Network busy. Retrying...";
             setTimeout(startNewRound, 2000);
         }
     } catch (error) {
         console.error("API Error:", error);
-        document.getElementById('question-text').innerText = "⚠️ Error fetching questions. Check internet connection.";
+        // Fallback if offline: generate purely algorithmic list round
+        currentRoundQuestions = [generateRandomListChallenge(), generateRandomListChallenge(), generateRandomListChallenge(), generateRandomListChallenge(), generateRandomListChallenge()];
+        loadQuestion();
     }
+}
+
+// --- PATH B: ALGORITHMIC LIST GENERATOR ---
+function generateRandomListChallenge() {
+    // Pick randomly between English Counties or European Countries
+    const listTypes = ['englishCounties', 'europeanCountries', 'usStates'];
+    let chosenKey = listTypes[Math.floor(Math.random() * listTypes.length)];
+    let listObj = listMasterData[chosenKey];
+
+    // Pick a random letter from the allowed list
+    let randomLetter = listObj.promptLetter[Math.floor(Math.random() * listObj.promptLetter.length)];
+    let validAnswers = listObj.data[randomLetter];
+
+    let titleName = chosenKey === 'englishCounties' ? "English Counties" : chosenKey === 'europeanCountries' ? "European Countries" : "US States";
+
+    return {
+        type: "list",
+        category: listObj.category,
+        question: `📋 LIST BATTLE: Name as many ${titleName} starting with the letter '${randomLetter}' as you can!`,
+        maxPoints: validAnswers.length,
+        answer: validAnswers.join(", ")
+    };
 }
 
 function loadQuestion() {
     let q = currentRoundQuestions[currentQuestionIndex];
+    
     document.getElementById('category-badge').innerText = q.category;
-    document.getElementById('type-badge').innerText = "❓ LIVE TRIVIA";
+    document.getElementById('type-badge').innerText = q.type === 'list' ? '📋 LIST BATTLE' : '❓ LIVE TRIVIA';
     document.getElementById('question-text').innerText = q.question;
     
     document.getElementById('round-info').innerText = `ROUND ${currentRound}`;
     document.getElementById('question-tracker').innerText = `QUESTION ${currentQuestionIndex + 1}/${questionsPerRound}`;
     document.getElementById('progress-bar').style.width = `${((currentQuestionIndex) / questionsPerRound) * 100}%`;
 
-    document.getElementById('mc-container').classList.remove('hidden');
-    document.getElementById('list-container').classList.add('hidden');
-    document.getElementById('score-section').classList.add('hidden');
-    document.getElementById('next-btn').classList.add('hidden');
+    const mcContainer = document.getElementById('mc-container');
+    const listContainer = document.getElementById('list-container');
+    const scoreSection = document.getElementById('score-section');
+    const nextBtn = document.getElementById('next-btn');
 
-    renderMC(q);
+    if (q.type === 'mc') {
+        mcContainer.classList.remove('hidden');
+        listContainer.classList.add('hidden');
+        scoreSection.classList.add('hidden');
+        nextBtn.classList.add('hidden');
+        renderMC(q);
+    } else {
+        mcContainer.classList.add('hidden');
+        listContainer.classList.remove('hidden');
+        scoreSection.classList.remove('hidden');
+        nextBtn.classList.remove('hidden');
+        document.getElementById('list-answer-box').classList.add('hidden');
+        renderListScoring(q);
+    }
 }
 
 function renderMC(q) {
@@ -130,7 +166,6 @@ function renderMC(q) {
                 players[0].score += 1;
                 if (window.confetti) confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
 
-                // PERMANENT MEMORY: Mark this question as solved so it never appears again!
                 if (!solvedQuestions.includes(q.question)) {
                     solvedQuestions.push(q.question);
                     localStorage.setItem('solvedTriviaQuestions', JSON.stringify(solvedQuestions));
@@ -141,6 +176,30 @@ function renderMC(q) {
                 all.forEach(b => { if (b.innerText === q.answer) b.classList.add('correct'); });
             }
             document.getElementById('next-btn').classList.remove('hidden');
+        };
+        container.appendChild(btn);
+    });
+}
+
+function toggleListAnswer() {
+    document.getElementById('list-answer-box').classList.remove('hidden');
+    document.getElementById('list-answer-text').innerText = currentRoundQuestions[currentQuestionIndex].answer;
+}
+
+function renderListScoring(q) {
+    const container = document.getElementById('player-score-controls');
+    container.innerHTML = '';
+    
+    document.getElementById('score-section').querySelector('h3').innerText = `🏆 AWARD POINTS (Tap for every item correct out of ${q.maxPoints}):`;
+
+    players.forEach((p) => {
+        let btn = document.createElement('button');
+        btn.className = 'score-btn';
+        btn.innerText = `${p.name} (+1 Pt)`;
+        btn.onclick = () => {
+            p.score += 1;
+            playSound('correct');
+            if (window.confetti) confetti({ particleCount: 30, spread: 50 });
         };
         container.appendChild(btn);
     });
@@ -171,7 +230,6 @@ function startNextRound() {
     startNewRound();
 }
 
-// Utility to clean up HTML entity codes from API text
 function decodeHTML(html) {
     let txt = document.createElement('textarea');
     txt.innerHTML = html;
