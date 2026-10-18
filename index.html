@@ -5,24 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>⚡ DINNER SHOWDOWN ⚡</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Canvas Confetti Library for explosive visual reward -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
-    <!-- Background Canvas for dynamic arcade glow -->
     <canvas id="canvas-bg"></canvas>
 
     <div class="container">
         <header>
             <h1 class="glow-title">⚡ TABLE SHOWDOWN ⚡</h1>
-            <p class="tagline">🔥 HIGH-ENERGY FAMILY TRIVIA 🔥</p>
+            <p class="tagline">🔥 TRIVIA & LIST BATTLES 🔥</p>
         </header>
 
         <!-- Setup Screen -->
         <section id="setup-screen" class="screen">
             <div class="card setup-card bounce-in">
                 <h2>🎮 SELECT YOUR SQUAD</h2>
-                <p>Tap below and enter names for up to 4 players:</p>
+                <p>Enter names for up to 4 players:</p>
                 <div class="player-inputs">
                     <input type="text" id="p1" placeholder="⚡ Player 1 (Eldest)">
                     <input type="text" id="p2" placeholder="🔥 Player 2 (Youngest)">
@@ -40,7 +38,6 @@
                 <span id="question-tracker" class="pill glow-pill">QUESTION 1/5</span>
             </div>
 
-            <!-- Glowing Rainbow Progress Bar -->
             <div class="progress-bar-container">
                 <div id="progress-bar" class="progress-bar"></div>
             </div>
@@ -52,21 +49,26 @@
                 </div>
                 <h2 id="question-text" class="arcade-text">Loading question...</h2>
                 
-                <button id="reveal-btn" class="btn secondary-btn arcade-btn" onclick="toggleAnswer()">👁️ REVEAL ANSWER!</button>
-                
-                <div id="answer-box" class="answer-box hidden bounce-in">
-                    <span class="answer-label">ANSWER:</span>
-                    <p id="answer-text">Answer goes here</p>
+                <!-- Multiple Choice Container -->
+                <div id="mc-container" class="mc-grid hidden"></div>
+
+                <!-- List Challenge Container -->
+                <div id="list-container" class="hidden">
+                    <button class="btn secondary-btn arcade-btn" onclick="toggleListAnswer()">📋 VIEW FULL LIST ANSWER</button>
+                    <div id="list-answer-box" class="answer-box hidden bounce-in">
+                        <span class="answer-label">POSSIBLE ANSWERS:</span>
+                        <p id="list-answer-text">Answer goes here</p>
+                    </div>
                 </div>
             </div>
 
-            <!-- Score Awarding Grid -->
-            <div class="score-section">
-                <h3>🏆 WHO GOT IT RIGHT?</h3>
+            <!-- Score Awarding Grid (Used for Lists or Manual Awarding) -->
+            <div id="score-section" class="score-section">
+                <h3 id="score-instruction">🏆 AWARD POINTS:</h3>
                 <div id="player-score-controls" class="player-grid"></div>
             </div>
 
-            <button id="next-btn" class="btn main-btn arcade-btn glow-btn" onclick="nextQuestion()">NEXT QUESTION ➡️</button>
+            <button id="next-btn" class="btn main-btn arcade-btn glow-btn hidden" onclick="nextQuestion()">NEXT QUESTION ➡️</button>
         </section>
 
         <!-- Round Summary Screen -->
