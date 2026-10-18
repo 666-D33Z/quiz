@@ -49,19 +49,28 @@ function startGame() {
 
 async function startNewRound() {
     currentQuestionIndex = 0;
-    document.getElementById('question-text').innerText = "⚡ Preparing round (fetching live trivia & generating list battles)...";
+    
+    // Determine difficulty based on round progression
+    let currentDifficulty = 'easy';
+    if (currentRound >= 3 && currentRound < 5) {
+        currentDifficulty = 'medium';
+    } else if (currentRound >= 5) {
+        currentDifficulty = 'hard';
+    }
+
+    document.getElementById('question-text').innerText = `⚡ Fetching ${currentDifficulty.toUpperCase()} trivia & flag challenges...`;
     document.getElementById('mc-container').innerHTML = '';
 
     try {
-        let response = await fetch('https://opentdb.com/api.php?amount=10&type=multiple');
+        // Fetch questions filtered specifically by the current difficulty tier
+        let response = await fetch(`https://opentdb.com/api.php?amount=10&difficulty=${currentDifficulty}&type=multiple`);
         let data = await response.json();
 
         if (data.results && data.results.length > 0) {
             let freshQuestions = data.results.filter(q => !solvedQuestions.includes(q.question));
-            if (freshQuestions.length < 4) freshQuestions = data.results;
+            if (freshQuestions.length < 3) freshQuestions = data.results;
 
-            // Map 4 live trivia questions
-            let triviaBatch = freshQuestions.slice(0, 4).map(q => {
+            let triviaBatch = freshQuestions.slice(0, 3).map(q => {
                 let decodedCorrect = decodeHTML(q.correct_answer);
                 let decodedIncorrects = q.incorrect_answers.map(ans => decodeHTML(ans));
                 return {
@@ -73,11 +82,13 @@ async function startNewRound() {
                 };
             });
 
-            // Generate 1 Algorithmic List Challenge for the round!
+            // Add 1 List Battle
             let listChallenge = generateRandomListChallenge();
+            
+            // Add 1 Picture / Flag Challenge!
+            let flagChallenge = await generateFlagChallenge();
 
-            // Combine them into a 5-question round and shuffle their positions
-            currentRoundQuestions = [...triviaBatch, listChallenge];
+            currentRoundQuestions = [...triviaBatch, listChallenge, flagChallenge];
             shuffleArray(currentRoundQuestions);
 
             loadQuestion();
@@ -86,20 +97,41 @@ async function startNewRound() {
         }
     } catch (error) {
         console.error("API Error:", error);
-        // Fallback if offline: generate purely algorithmic list round
-        currentRoundQuestions = [generateRandomListChallenge(), generateRandomListChallenge(), generateRandomListChallenge(), generateRandomListChallenge(), generateRandomListChallenge()];
-        loadQuestion();
+        setTimeout(startNewRound, 2000);
     }
 }
 
-// --- PATH B: ALGORITHMIC LIST GENERATOR ---
+// --- PICTURE / FLAG CHALLENGE GENERATOR ---
+async function generateFlagChallenge() {
+    try {
+        let res = await fetch('https://restcountries.com/3.1/all?fields=name,flags');
+        let countries = await res.json();
+        
+        // Pick 4 random countries
+        shuffleArray(countries);
+        let selected = countries.slice(0, 4);
+        let correctCountry = selected[0];
+
+        return {
+            type: "flag",
+            category: "Geography Picture Round",
+            question: "🚩 PICTURE ROUND: Which country does this flag belong to?",
+            flagUrl: correctCountry.flags.png,
+            answer: correctCountry.name.common,
+            options: selected.map(c => c.name.common)
+        };
+    } catch (err) {
+        // Fallback if flag API fails
+        return generateRandomListChallenge();
+    }
+}
+
+// --- ALGORITHMIC LIST GENERATOR ---
 function generateRandomListChallenge() {
-    // Pick randomly between English Counties or European Countries
     const listTypes = ['englishCounties', 'europeanCountries', 'usStates'];
     let chosenKey = listTypes[Math.floor(Math.random() * listTypes.length)];
     let listObj = listMasterData[chosenKey];
 
-    // Pick a random letter from the allowed list
     let randomLetter = listObj.promptLetter[Math.floor(Math.random() * listObj.promptLetter.length)];
     let validAnswers = listObj.data[randomLetter];
 
@@ -108,7 +140,7 @@ function generateRandomListChallenge() {
     return {
         type: "list",
         category: listObj.category,
-        question: `📋 LIST BATTLE: Name as many ${titleName} starting with the letter '${randomLetter}' as you can!`,
+        question: `📋 LIST BATTLE: Name as many ${titleName} starting with '${randomLetter}' as you can!`,
         maxPoints: validAnswers.length,
         answer: validAnswers.join(", ")
     };
@@ -118,10 +150,20 @@ function loadQuestion() {
     let q = currentRoundQuestions[currentQuestionIndex];
     
     document.getElementById('category-badge').innerText = q.category;
-    document.getElementById('type-badge').innerText = q.type === 'list' ? '📋 LIST BATTLE' : '❓ LIVE TRIVIA';
-    document.getElementById('question-text').innerText = q.question;
+    document.getElementById('type-badge').innerText = q.type === 'flag' ? '🖼️ PICTURE ROUND' : q.type === 'list' ? '📋 LIST BATTLE' : '❓ LIVE TRIVIA';
     
-    document.getElementById('round-info').innerText = `ROUND ${currentRound}`;
+    // Display Question Text & Flag Image if applicable
+    if (q.type === 'flag') {
+        document.getElementById('question-text').innerHTML = `
+            ${q.question}<br>
+            <img src="${q.flagUrl}" alt="Flag" style="max-width: 200px; border-radius: 10px; margin-top: 15px; border: 3px solid var(--neon-blue); shadow: 0 0 15px var(--neon-blue);">
+        `;
+    } else {
+        document.getElementById('question-text').innerText = q.question;
+    }
+    
+    let currentDifficultyLabel = currentRound < 3 ? 'EASY' : currentRound < 5 ? 'MEDIUM' : 'HARD';
+    document.getElementById('round-info').innerText = `ROUND ${currentRound} (${currentDifficultyLabel})`;
     document.getElementById('question-tracker').innerText = `QUESTION ${currentQuestionIndex + 1}/${questionsPerRound}`;
     document.getElementById('progress-bar').style.width = `${((currentQuestionIndex) / questionsPerRound) * 100}%`;
 
@@ -130,7 +172,7 @@ function loadQuestion() {
     const scoreSection = document.getElementById('score-section');
     const nextBtn = document.getElementById('next-btn');
 
-    if (q.type === 'mc') {
+    if (q.type === 'mc' || q.type === 'flag') {
         mcContainer.classList.remove('hidden');
         listContainer.classList.add('hidden');
         scoreSection.classList.add('hidden');
