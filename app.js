@@ -25,14 +25,15 @@ function playSound(type) {
     }
 }
 
-// --- GAME LOGIC ---
+// --- GAME STATE ---
 let players = [];
 let currentRoundQuestions = [];
 let currentQuestionIndex = 0;
 let currentRound = 1;
 const questionsPerRound = 5;
-let currentDifficulty = 'easy';
-let usedQuestionSet = new Set();
+
+// Load permanently solved question strings from browser memory so they NEVER repeat
+let solvedQuestions = JSON.parse(localStorage.getItem('solvedTriviaQuestions')) || [];
 
 function startGame() {
     players = [];
@@ -47,49 +48,66 @@ function startGame() {
     startNewRound();
 }
 
-function startNewRound() {
+async function startNewRound() {
     currentQuestionIndex = 0;
-    let pool = questionBank[currentDifficulty] || questionBank['easy'];
-    let available = pool.filter(q => !usedQuestionSet.has(q.question));
-    if (available.length < questionsPerRound) {
-        pool.forEach(q => usedQuestionSet.delete(q.question));
-        available = [...pool];
+    document.getElementById('question-text').innerText = "⚡ Fetching fresh questions from the global database...";
+    document.getElementById('mc-container').innerHTML = '';
+
+    try {
+        // Fetch 10 questions at a time from the live API to ensure we have enough fresh ones
+        let response = await fetch('https://opentdb.com/api.php?amount=10&type=multiple');
+        let data = await response.json();
+
+        if (data.results && data.results.length > 0) {
+            // Filter out any questions the family has already successfully solved in the past!
+            let freshQuestions = data.results.filter(q => !solvedQuestions.includes(q.question));
+
+            // If somehow all fetched questions were already solved, fetch more or use what we got
+            if (freshQuestions.length < questionsPerRound) {
+                freshQuestions = data.results; // Fallback if pool is tight
+            }
+
+            currentRoundQuestions = freshQuestions.slice(0, questionsPerRound).map(q => {
+                // Decode HTML entities from API text (e.g., &quot; -> ")
+                let decodedQuestion = decodeHTML(q.question);
+                let decodedCorrect = decodeHTML(q.correct_answer);
+                let decodedIncorrects = q.incorrect_answers.map(ans => decodeHTML(ans));
+
+                return {
+                    category: decodeHTML(q.category),
+                    question: decodedQuestion,
+                    answer: decodedCorrect,
+                    options: [...decodedIncorrects, decodedCorrect]
+                };
+            });
+
+            loadQuestion();
+        } else {
+            document.getElementById('question-text').innerText = "⚠️ Network busy. Retrying...";
+            setTimeout(startNewRound, 2000);
+        }
+    } catch (error) {
+        console.error("API Error:", error);
+        document.getElementById('question-text').innerText = "⚠️ Error fetching questions. Check internet connection.";
     }
-    shuffleArray(available);
-    currentRoundQuestions = available.slice(0, questionsPerRound);
-    currentRoundQuestions.forEach(q => usedQuestionSet.add(q.question));
-    loadQuestion();
 }
 
 function loadQuestion() {
     let q = currentRoundQuestions[currentQuestionIndex];
     document.getElementById('category-badge').innerText = q.category;
-    document.getElementById('type-badge').innerText = q.type === 'list' ? '📋 LIST BATTLE' : '❓ MULTIPLE CHOICE';
+    document.getElementById('type-badge').innerText = "❓ LIVE TRIVIA";
     document.getElementById('question-text').innerText = q.question;
     
-    document.getElementById('round-info').innerText = `ROUND ${currentRound} (${currentDifficulty.toUpperCase()})`;
+    document.getElementById('round-info').innerText = `ROUND ${currentRound}`;
     document.getElementById('question-tracker').innerText = `QUESTION ${currentQuestionIndex + 1}/${questionsPerRound}`;
     document.getElementById('progress-bar').style.width = `${((currentQuestionIndex) / questionsPerRound) * 100}%`;
 
-    const mcContainer = document.getElementById('mc-container');
-    const listContainer = document.getElementById('list-container');
-    const scoreSection = document.getElementById('score-section');
-    const nextBtn = document.getElementById('next-btn');
+    document.getElementById('mc-container').classList.remove('hidden');
+    document.getElementById('list-container').classList.add('hidden');
+    document.getElementById('score-section').classList.add('hidden');
+    document.getElementById('next-btn').classList.add('hidden');
 
-    if (q.type === 'mc') {
-        mcContainer.classList.remove('hidden');
-        listContainer.classList.add('hidden');
-        scoreSection.classList.add('hidden');
-        nextBtn.classList.add('hidden');
-        renderMC(q);
-    } else {
-        mcContainer.classList.add('hidden');
-        listContainer.classList.remove('hidden');
-        scoreSection.classList.remove('hidden');
-        nextBtn.classList.remove('hidden');
-        document.getElementById('list-answer-box').classList.add('hidden');
-        renderListScoring(q);
-    }
+    renderMC(q);
 }
 
 function renderMC(q) {
@@ -105,38 +123,24 @@ function renderMC(q) {
         btn.onclick = () => {
             let all = container.querySelectorAll('.mc-btn');
             all.forEach(b => b.disabled = true);
+
             if (opt === q.answer) {
                 btn.classList.add('correct');
                 playSound('correct');
                 players[0].score += 1;
                 if (window.confetti) confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+
+                // PERMANENT MEMORY: Mark this question as solved so it never appears again!
+                if (!solvedQuestions.includes(q.question)) {
+                    solvedQuestions.push(q.question);
+                    localStorage.setItem('solvedTriviaQuestions', JSON.stringify(solvedQuestions));
+                }
             } else {
                 btn.classList.add('wrong');
                 playSound('wrong');
                 all.forEach(b => { if (b.innerText === q.answer) b.classList.add('correct'); });
             }
             document.getElementById('next-btn').classList.remove('hidden');
-        };
-        container.appendChild(btn);
-    });
-}
-
-function toggleListAnswer() {
-    document.getElementById('list-answer-box').classList.remove('hidden');
-    document.getElementById('list-answer-text').innerText = currentRoundQuestions[currentQuestionIndex].answer;
-}
-
-function renderListScoring(q) {
-    const container = document.getElementById('player-score-controls');
-    container.innerHTML = '';
-    players.forEach((p) => {
-        let btn = document.createElement('button');
-        btn.className = 'score-btn';
-        btn.innerText = `${p.name} (+1 Pt)`;
-        btn.onclick = () => {
-            p.score += 1;
-            playSound('correct');
-            if (window.confetti) confetti({ particleCount: 30, spread: 50 });
         };
         container.appendChild(btn);
     });
@@ -162,11 +166,16 @@ function showSummary() {
 
 function startNextRound() {
     currentRound++;
-    if (currentRound === 3) currentDifficulty = 'medium';
-    if (currentRound >= 5) currentDifficulty = 'hard';
     document.getElementById('summary-screen').classList.add('hidden');
     document.getElementById('quiz-screen').classList.remove('hidden');
     startNewRound();
+}
+
+// Utility to clean up HTML entity codes from API text
+function decodeHTML(html) {
+    let txt = document.createElement('textarea');
+    txt.innerHTML = html;
+    return txt.value;
 }
 
 function shuffleArray(arr) {
