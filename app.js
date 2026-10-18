@@ -1,25 +1,3 @@
-// Base question pool including standard trivia and alphabetical list challenges
-let questionPool = JSON.parse(localStorage.getItem('familyQuizQuestions')) || {
-    easy: [
-        { type: "trivia", category: "General", question: "How many legs does a spider have?", answer: "8" },
-        { type: "trivia", category: "Geography", question: "What is the capital city of Australia?", answer: "Canberra" },
-        { type: "trivia", category: "Literature", question: "Who wrote 'Harry Potter'?", answer: "J.K. Rowling" },
-        { type: "list", category: "Geography", question: "Name 4 English counties starting with the letter 'B' (e.g., Bedfordshire, Berkshire...)", answer: "Bedfordshire, Berkshire, Buckinghamshire, Bristol (or Border counties)" },
-        { type: "trivia", category: "Animals", question: "What is a baby kangaroo called?", answer: "A joey" }
-    ],
-    medium: [
-        { type: "trivia", category: "History", question: "In what year did the Titanic sink?", answer: "1912" },
-        { type: "trivia", category: "Science", question: "What planet is known as the Red Planet?", answer: "Mars" },
-        { type: "list", category: "Geography", question: "Name 4 European countries starting with the letter 'S'", answer: "Spain, Sweden, Switzerland, Slovakia (or Serbia, Slovenia...)" },
-        { type: "trivia", category: "Pop Culture", question: "Which band released the album 'Abbey Road'?", answer: "The Beatles" }
-    ],
-    hard: [
-        { type: "trivia", category: "Geography", question: "What is the capital of Kazakhstan?", answer: "Astana" },
-        { type: "list", category: "Science", question: "Name 4 chemical elements starting with the letter 'C'", answer: "Carbon, Calcium, Chlorine, Copper" },
-        { type: "trivia", category: "History", question: "Who was the first Emperor of Rome?", answer: "Augustus" }
-    ]
-};
-
 let players = [];
 let currentRoundQuestions = [];
 let currentQuestionIndex = 0;
@@ -32,12 +10,21 @@ function startGame() {
     for (let i = 1; i <= 4; i++) {
         let name = document.getElementById(`p${i}`).value.trim();
         if (name) {
-            players.push({ name: name, score: 0 });
+            // Track individual category performance for adaptive difficulty
+            players.push({ 
+                name: name, 
+                score: 0, 
+                categoryStrengths: { Geography: 0, Science: 0, History: 0, General: 0, Literature: 0, PopCulture: 0, Movies: 0, Animals: 0, Food: 0 } 
+            });
         }
     }
 
     if (players.length === 0) {
-        players.push({ name: "Group / Family", score: 0 });
+        players.push({ 
+            name: "Group / Family", 
+            score: 0, 
+            categoryStrengths: { General: 0 } 
+        });
     }
 
     document.getElementById('setup-screen').classList.add('hidden');
@@ -49,8 +36,8 @@ function startGame() {
 function startNewRound() {
     currentQuestionIndex = 0;
     
-    // Grab pool for current difficulty, or fallback if empty
-    let pool = questionPool[currentDifficulty] || questionPool['easy'];
+    // Grab pool for current difficulty from questions.js
+    let pool = questionBank[currentDifficulty] || questionBank['easy'];
     let shuffled = [...pool];
     shuffleArray(shuffled);
     
@@ -80,12 +67,18 @@ function toggleAnswer() {
 function renderPlayerScoreButtons() {
     const container = document.getElementById('player-score-controls');
     container.innerHTML = '';
+    let currentCat = currentRoundQuestions[currentQuestionIndex].category;
+
     players.forEach((p) => {
         let btn = document.createElement('button');
         btn.className = 'score-btn';
         btn.innerText = `${p.name} (+1)`;
         btn.onclick = () => {
             p.score += 1;
+            // Adaptive tracking: note which category this player excelled in
+            if (p.categoryStrengths[currentCat] !== undefined) {
+                p.categoryStrengths[currentCat]++;
+            }
             btn.classList.add('active');
         };
         container.appendChild(btn);
@@ -112,7 +105,8 @@ function showSummary() {
 function startNextRound() {
     currentRound++;
     
-    // Gradually scale difficulty up every couple of rounds
+    // Adaptive overall difficulty scaling based on rounds, 
+    // or we can check if players are cruising through easy mode
     if (currentRound === 3) currentDifficulty = 'medium';
     if (currentRound >= 5) currentDifficulty = 'hard';
 
