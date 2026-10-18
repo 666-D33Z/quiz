@@ -1,16 +1,31 @@
-// Sample base question bank
-const questions = [
-    { category: "Geography", question: "What is the capital city of Australia?", answer: "Canberra" },
-    { category: "Science", question: "What chemical element has the symbol 'O'?", answer: "Oxygen" },
-    { category: "General", question: "How many legs does a spider have?", answer: "8" },
-    { category: "Literature", question: "Who wrote 'Harry Potter'?", answer: "J.K. Rowling" },
-    { category: "Geography", question: "Which county is known as 'The Garden of England'?", answer: "Kent" }
-];
+// Base question pool including standard trivia and alphabetical list challenges
+let questionPool = JSON.parse(localStorage.getItem('familyQuizQuestions')) || {
+    easy: [
+        { type: "trivia", category: "General", question: "How many legs does a spider have?", answer: "8" },
+        { type: "trivia", category: "Geography", question: "What is the capital city of Australia?", answer: "Canberra" },
+        { type: "trivia", category: "Literature", question: "Who wrote 'Harry Potter'?", answer: "J.K. Rowling" },
+        { type: "list", category: "Geography", question: "Name 4 English counties starting with the letter 'B' (e.g., Bedfordshire, Berkshire...)", answer: "Bedfordshire, Berkshire, Buckinghamshire, Bristol (or Border counties)" },
+        { type: "trivia", category: "Animals", question: "What is a baby kangaroo called?", answer: "A joey" }
+    ],
+    medium: [
+        { type: "trivia", category: "History", question: "In what year did the Titanic sink?", answer: "1912" },
+        { type: "trivia", category: "Science", question: "What planet is known as the Red Planet?", answer: "Mars" },
+        { type: "list", category: "Geography", question: "Name 4 European countries starting with the letter 'S'", answer: "Spain, Sweden, Switzerland, Slovakia (or Serbia, Slovenia...)" },
+        { type: "trivia", category: "Pop Culture", question: "Which band released the album 'Abbey Road'?", answer: "The Beatles" }
+    ],
+    hard: [
+        { type: "trivia", category: "Geography", question: "What is the capital of Kazakhstan?", answer: "Astana" },
+        { type: "list", category: "Science", question: "Name 4 chemical elements starting with the letter 'C'", answer: "Carbon, Calcium, Chlorine, Copper" },
+        { type: "trivia", category: "History", question: "Who was the first Emperor of Rome?", answer: "Augustus" }
+    ]
+};
 
 let players = [];
+let currentRoundQuestions = [];
 let currentQuestionIndex = 0;
 let currentRound = 1;
 const questionsPerRound = 5;
+let currentDifficulty = 'easy';
 
 function startGame() {
     players = [];
@@ -27,18 +42,33 @@ function startGame() {
 
     document.getElementById('setup-screen').classList.add('hidden');
     document.getElementById('quiz-screen').classList.remove('hidden');
+    
+    startNewRound();
+}
+
+function startNewRound() {
+    currentQuestionIndex = 0;
+    
+    // Grab pool for current difficulty, or fallback if empty
+    let pool = questionPool[currentDifficulty] || questionPool['easy'];
+    let shuffled = [...pool];
+    shuffleArray(shuffled);
+    
+    currentRoundQuestions = shuffled.slice(0, questionsPerRound);
     loadQuestion();
 }
 
 function loadQuestion() {
-    let q = questions[currentQuestionIndex];
-    document.getElementById('category-badge').innerText = q.category;
+    let q = currentRoundQuestions[currentQuestionIndex];
+    let typeLabel = q.type === 'list' ? '📋 List Challenge' : '❓ Trivia';
+    
+    document.getElementById('category-badge').innerText = `${q.category} | ${typeLabel}`;
     document.getElementById('question-text').innerText = q.question;
     document.getElementById('answer-text').innerText = q.answer;
     document.getElementById('answer-box').classList.add('hidden');
     
-    document.getElementById('round-info').innerText = `Round ${currentRound}`;
-    document.getElementById('question-tracker').innerText = `Question ${(currentQuestionIndex % questionsPerRound) + 1}/${questionsPerRound}`;
+    document.getElementById('round-info').innerText = `Round ${currentRound} (${currentDifficulty.toUpperCase()})`;
+    document.getElementById('question-tracker').innerText = `Question ${currentQuestionIndex + 1}/${questionsPerRound}`;
 
     renderPlayerScoreButtons();
 }
@@ -50,7 +80,7 @@ function toggleAnswer() {
 function renderPlayerScoreButtons() {
     const container = document.getElementById('player-score-controls');
     container.innerHTML = '';
-    players.forEach((p, idx) => {
+    players.forEach((p) => {
         let btn = document.createElement('button');
         btn.className = 'score-btn';
         btn.innerText = `${p.name} (+1)`;
@@ -64,7 +94,7 @@ function renderPlayerScoreButtons() {
 
 function nextQuestion() {
     currentQuestionIndex++;
-    if (currentQuestionIndex % questionsPerRound === 0 || currentQuestionIndex >= questions.length) {
+    if (currentQuestionIndex >= currentRoundQuestions.length) {
         showSummary();
     } else {
         loadQuestion();
@@ -81,10 +111,20 @@ function showSummary() {
 
 function startNextRound() {
     currentRound++;
+    
+    // Gradually scale difficulty up every couple of rounds
+    if (currentRound === 3) currentDifficulty = 'medium';
+    if (currentRound >= 5) currentDifficulty = 'hard';
+
     document.getElementById('summary-screen').classList.add('hidden');
     document.getElementById('quiz-screen').classList.remove('hidden');
-    if (currentQuestionIndex >= questions.length) {
-        currentQuestionIndex = 0; // Loop back or load new set
+    
+    startNewRound();
+}
+
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
     }
-    loadQuestion();
 }
