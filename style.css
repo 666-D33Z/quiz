@@ -1,322 +1,40 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@600;800;900&display=swap');
-
-:root {
-    --neon-pink: #ff007f;
-    --neon-blue: #00f0ff;
-    --neon-green: #39ff14;
-    --neon-yellow: #ffe600;
-    --neon-purple: #9d00ff;
-    --card-bg: rgba(20, 20, 35, 0.85);
-}
-
-body {
-    font-family: 'Outfit', sans-serif;
-    background-color: #080811;
-    color: #ffffff;
-    margin: 0;
-    padding: 15px;
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow-x: hidden;
-}
-
-#canvas-bg {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: -1;
-}
-
-.container {
-    width: 100%;
-    max-width: 650px;
-    z-index: 1;
-}
-
-/* Glowing Neon Header */
-.glow-title {
-    font-size: 2.5rem;
-    font-weight: 900;
-    text-align: center;
-    margin: 0;
-    letter-spacing: 2px;
-    color: #fff;
-    text-shadow: 
-        0 0 7px #fff,
-        0 0 10px #fff,
-        0 0 21px var(--neon-pink),
-        0 0 42px var(--neon-pink),
-        0 0 82px var(--neon-pink);
-    animation: neonPulse 1.5s infinite alternate;
-}
-
-@keyframes neonPulse {
-    from { text-shadow: 0 0 7px #fff, 0 0 10px #fff, 0 0 21px var(--neon-pink), 0 0 42px var(--neon-pink); }
-    to { text-shadow: 0 0 10px #fff, 0 0 15px #fff, 0 0 25px var(--neon-blue), 0 0 55px var(--neon-blue); }
-}
-
-.tagline {
-    text-align: center;
-    color: var(--neon-yellow);
-    font-size: 1.1rem;
-    font-weight: 800;
-    letter-spacing: 1px;
-    margin-top: 5px;
-}
-
-.hidden { display: none !important; }
-
-/* Arcade Card Design */
-.card {
-    background: var(--card-bg);
-    border-radius: 20px;
-    padding: 25px;
-    border: 3px solid var(--neon-blue);
-    box-shadow: 0 0 25px rgba(0, 240, 255, 0.3), inset 0 0 15px rgba(0, 240, 255, 0.2);
-    backdrop-filter: blur(10px);
-    margin-bottom: 20px;
-}
-
-/* Pop & Bounce Animations */
-.bounce-in {
-    animation: bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-.pop-in {
-    animation: popIn 0.3s ease-out;
-}
-
-@keyframes bounceIn {
-    0% { transform: scale(0.3); opacity: 0; }
-    50% { transform: scale(1.05); }
-    70% { transform: scale(0.9); }
-    100% { transform: scale(1); opacity: 1; }
-}
-
-@keyframes popIn {
-    0% { transform: translateY(20px); opacity: 0; }
-    100% { transform: translateY(0); opacity: 1; }
-}
-
-/* Big Vibrant Inputs */
-.player-inputs {
+/* Multiple Choice Grid */
+.mc-grid {
     display: grid;
-    gap: 12px;
-    margin: 20px 0;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-top: 20px;
 }
 
-input[type="text"] {
-    width: 100%;
-    padding: 16px;
-    font-size: 1.1rem;
-    font-weight: 800;
-    background: rgba(0, 0, 0, 0.6);
-    border: 2px solid var(--neon-purple);
-    border-radius: 12px;
+.mc-btn {
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid var(--neon-blue);
     color: #fff;
-    box-sizing: border-box;
-    transition: all 0.3s ease;
+    padding: 16px;
+    font-weight: 800;
+    font-size: 1.1rem;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
-input[type="text"]:focus {
-    border-color: var(--neon-yellow);
-    box-shadow: 0 0 15px var(--neon-yellow);
-    outline: none;
+.mc-btn:hover {
+    background: var(--neon-blue);
+    color: #000;
+    box-shadow: 0 0 15px var(--neon-blue);
     transform: scale(1.02);
 }
 
-/* Arcade Buttons */
-.btn {
-    width: 100%;
-    padding: 18px;
-    font-size: 1.3rem;
-    font-weight: 900;
-    text-transform: uppercase;
-    border: none;
-    border-radius: 15px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    box-shadow: 0 6px 0 rgba(0,0,0,0.5);
+.mc-btn.correct {
+    background: var(--neon-green) !important;
+    color: #000 !important;
+    border-color: var(--neon-green) !important;
+    box-shadow: 0 0 25px var(--neon-green);
 }
 
-.btn:active {
-    transform: translateY(4px);
-    box-shadow: 0 2px 0 rgba(0,0,0,0.5);
-}
-
-.main-btn {
-    background: linear-gradient(135deg, #39ff14 0%, #00b300 100%);
-    color: #000;
-    text-shadow: 0 1px 0 rgba(255,255,255,0.5);
-}
-
-.glow-btn {
-    box-shadow: 0 0 20px rgba(57, 255, 20, 0.6), 0 6px 0 #008000;
-}
-
-.secondary-btn {
-    background: linear-gradient(135deg, var(--neon-pink) 0%, #b30059 100%);
-    color: #fff;
-    box-shadow: 0 0 15px rgba(255, 0, 127, 0.5), 0 6px 0 #800040;
-}
-
-.pulse-btn {
-    animation: pulseGlow 1.5s infinite alternate;
-}
-
-@keyframes pulseGlow {
-    from { transform: scale(1); box-shadow: 0 0 15px var(--neon-green); }
-    to { transform: scale(1.03); box-shadow: 0 0 30px var(--neon-green); }
-}
-
-/* Status Bar & Rainbow Progress */
-.quiz-status-bar {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 12px;
-}
-
-.glow-pill {
-    background: rgba(0, 0, 0, 0.8);
-    border: 2px solid var(--neon-blue);
-    color: var(--neon-blue);
-    padding: 8px 16px;
-    border-radius: 30px;
-    font-weight: 900;
-    box-shadow: 0 0 10px var(--neon-blue);
-}
-
-.progress-bar-container {
-    background: rgba(255, 255, 255, 0.1);
-    height: 14px;
-    border-radius: 10px;
-    margin-bottom: 20px;
-    overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.2);
-}
-
-.progress-bar {
-    background: linear-gradient(90deg, var(--neon-pink), var(--neon-blue), var(--neon-green));
-    height: 100%;
-    width: 0%;
-    transition: width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-/* Question Badges & Typography */
-.badges {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
-}
-
-.badge {
-    background: var(--neon-purple);
-    color: #fff;
-    padding: 6px 14px;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    font-weight: 900;
-    letter-spacing: 1px;
-    box-shadow: 0 0 10px var(--neon-purple);
-}
-
-.type-badge {
-    background: var(--neon-blue);
-    color: #000;
-    box-shadow: 0 0 10px var(--neon-blue);
-}
-
-.arcade-text {
-    font-size: 1.8rem;
-    line-height: 1.3;
-    margin: 15px 0 25px 0;
-    color: #fff;
-}
-
-.answer-box {
-    margin-top: 20px;
-    background: rgba(57, 255, 20, 0.15);
-    border: 2px solid var(--neon-green);
-    padding: 18px;
-    border-radius: 12px;
-    box-shadow: 0 0 20px rgba(57, 255, 20, 0.3);
-}
-
-.answer-label {
-    color: var(--neon-green);
-    font-weight: 900;
-    font-size: 0.9rem;
-    letter-spacing: 2px;
-}
-
-.answer-box p {
-    margin: 5px 0 0 0;
-    font-size: 1.6rem;
-    font-weight: 900;
-    color: #fff;
-}
-
-/* Interactive Score Grid */
-.score-section h3 {
-    text-align: center;
-    color: var(--neon-yellow);
-    font-size: 1.2rem;
-    letter-spacing: 1px;
-    margin-bottom: 12px;
-}
-
-.player-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    margin-bottom: 20px;
-}
-
-.score-btn {
-    background: rgba(0, 0, 0, 0.7);
-    border: 2px solid var(--neon-purple);
-    color: #fff;
-    padding: 16px;
-    font-weight: 900;
-    font-size: 1.1rem;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.score-btn:hover {
-    border-color: var(--neon-yellow);
-    transform: translateY(-2px);
-}
-
-.score-btn.active {
-    background: var(--neon-green);
-    color: #000;
-    border-color: var(--neon-green);
-    box-shadow: 0 0 20px var(--neon-green);
-    transform: scale(1.05);
-}
-
-/* Scoreboard */
-.scoreboard-list ul {
-    list-style: none;
-    padding: 0;
-    margin: 20px 0;
-}
-
-.scoreboard-list li {
-    background: rgba(0,0,0,0.8);
-    padding: 16px 22px;
-    margin-bottom: 12px;
-    border-radius: 12px;
-    display: flex;
-    justify-content: space-between;
-    font-size: 1.4rem;
-    font-weight: 900;
-    border-left: 6px solid var(--neon-pink);
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+.mc-btn.wrong {
+    background: var(--neon-pink) !important;
+    color: #fff !important;
+    border-color: var(--neon-pink) !important;
+    opacity: 0.6;
 }
