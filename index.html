@@ -3,74 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Dinner Gameshow</title>
+    <title>⚡ DINNER SHOWDOWN ⚡</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Canvas Confetti Library for explosive visual reward -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
+    <!-- Background Canvas for dynamic arcade glow -->
+    <canvas id="canvas-bg"></canvas>
+
     <div class="container">
         <header>
-            <h1>🍽️ Table Trivia Showdown</h1>
-            <p class="tagline">Zero silence, maximum banter.</p>
+            <h1 class="glow-title">⚡ TABLE SHOWDOWN ⚡</h1>
+            <p class="tagline">🔥 HIGH-ENERGY FAMILY TRIVIA 🔥</p>
         </header>
 
         <!-- Setup Screen -->
         <section id="setup-screen" class="screen">
-            <div class="card setup-card">
-                <h2>Who's at the table?</h2>
-                <p>Enter player names (leave blank to play as one cooperative team):</p>
+            <div class="card setup-card bounce-in">
+                <h2>🎮 SELECT YOUR SQUAD</h2>
+                <p>Tap below and enter names for up to 4 players:</p>
                 <div class="player-inputs">
-                    <input type="text" id="p1" placeholder="Player 1 (e.g. Eldest Son)">
-                    <input type="text" id="p2" placeholder="Player 2 (e.g. Youngest)">
-                    <input type="text" id="p3" placeholder="Player 3 (e.g. Mrs)">
-                    <input type="text" id="p4" placeholder="Player 4 (e.g. You)">
+                    <input type="text" id="p1" placeholder="⚡ Player 1 (Eldest)">
+                    <input type="text" id="p2" placeholder="🔥 Player 2 (Youngest)">
+                    <input type="text" id="p3" placeholder="👑 Player 3 (Mrs)">
+                    <input type="text" id="p4" placeholder="🎯 Player 4 (You)">
                 </div>
-                <button class="btn main-btn pulse-btn" onclick="startGame()">🚀 Let's Play!</button>
+                <button class="btn main-btn arcade-btn" onclick="startGame()">🚀 START THE SHOW!</button>
             </div>
         </section>
 
         <!-- Quiz Screen -->
         <section id="quiz-screen" class="screen hidden">
             <div class="quiz-status-bar">
-                <span id="round-info" class="pill">Round 1</span>
-                <span id="question-tracker" class="pill">Question 1/5</span>
+                <span id="round-info" class="pill glow-pill">ROUND 1</span>
+                <span id="question-tracker" class="pill glow-pill">QUESTION 1/5</span>
             </div>
 
-            <!-- Progress Bar -->
+            <!-- Glowing Rainbow Progress Bar -->
             <div class="progress-bar-container">
                 <div id="progress-bar" class="progress-bar"></div>
             </div>
 
-            <div class="card question-card">
+            <div class="card question-card pop-in" id="question-card">
                 <div class="badges">
                     <span id="category-badge" class="badge">General</span>
                     <span id="type-badge" class="badge type-badge">Trivia</span>
                 </div>
-                <h2 id="question-text">Loading question...</h2>
+                <h2 id="question-text" class="arcade-text">Loading question...</h2>
                 
-                <button id="reveal-btn" class="btn secondary-btn" onclick="toggleAnswer()">👁️ Reveal Answer</button>
+                <button id="reveal-btn" class="btn secondary-btn arcade-btn" onclick="toggleAnswer()">👁️ REVEAL ANSWER!</button>
                 
-                <div id="answer-box" class="answer-box hidden">
-                    <h3>Answer:</h3>
+                <div id="answer-box" class="answer-box hidden bounce-in">
+                    <span class="answer-label">ANSWER:</span>
                     <p id="answer-text">Answer goes here</p>
                 </div>
             </div>
 
             <!-- Score Awarding Grid -->
             <div class="score-section">
-                <h3>🏆 Award Point To:</h3>
+                <h3>🏆 WHO GOT IT RIGHT?</h3>
                 <div id="player-score-controls" class="player-grid"></div>
             </div>
 
-            <button id="next-btn" class="btn main-btn" onclick="nextQuestion()">Next Question ➡️</button>
+            <button id="next-btn" class="btn main-btn arcade-btn glow-btn" onclick="nextQuestion()">NEXT QUESTION ➡️</button>
         </section>
 
         <!-- Round Summary Screen -->
         <section id="summary-screen" class="screen hidden">
-            <div class="card summary-card">
-                <h2>🎉 Round Complete!</h2>
-                <p>How's everyone doing at the table?</p>
+            <div class="card summary-card bounce-in">
+                <h2 class="glow-title">🎉 ROUND COMPLETE! 🎉</h2>
+                <p class="tagline">LEADERBOARD STANDINGS</p>
                 <div id="scoreboard" class="scoreboard-list"></div>
-                <button class="btn main-btn pulse-btn" onclick="startNextRound()">Keep Playing ➡️</button>
+                <button class="btn main-btn arcade-btn pulse-btn" onclick="startNextRound()">NEXT ROUND 🚀</button>
             </div>
         </section>
     </div>
