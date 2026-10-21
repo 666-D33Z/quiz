@@ -1,5 +1,5 @@
-// Relatable Family General Knowledge Categories (Film, TV, Games, Animals, Sports, Science)
-const familyCategories = [11, 14, 15, 17, 18, 21, 22, 23, 27];
+// Relatable Family General Knowledge Categories ONLY
+const familyCategories = [11, 14, 15, 17, 18, 21, 22, 23, 27]; // Movies, TV, Video Games, Science, Sports, Geography, Animals
 
 let currentRoundQuestions = [];
 let currentQuestionIndex = 0;
@@ -8,28 +8,19 @@ let roundScore = 0;
 let currentDifficulty = 'easy';
 
 let solvedQuestions = JSON.parse(localStorage.getItem('solvedShowdownTrivia')) || [];
-let allWorldCountries = [];
+let usedFlagIndices = [];
 
 function startGame() {
     document.getElementById('setup-screen').classList.add('hidden');
     document.getElementById('quiz-screen').classList.remove('hidden');
-    
-    // Fetch ALL ~195 World Countries live so flags never loop or run out
-    fetch('https://restcountries.com/3.1/all?fields=name,cca2')
-        .then(res => res.json())
-        .then(data => {
-            // Filter out territories without clear names
-            allWorldCountries = data.filter(c => c.name && c.name.common && c.cca2);
-        })
-        .catch(err => console.error("Error loading world countries:", err))
-        .finally(() => startNewRound());
+    startNewRound();
 }
 
 async function startNewRound() {
     currentQuestionIndex = 0;
     roundScore = 0;
     
-    document.getElementById('question-text').innerText = "⚡ Fetching fresh questions & flags...";
+    document.getElementById('question-text').innerText = "Loading round...";
     document.getElementById('options-grid').innerHTML = '';
 
     try {
@@ -41,7 +32,6 @@ async function startNewRound() {
             let fresh = data.results.filter(q => !solvedQuestions.includes(q.question));
             if (fresh.length < 3) fresh = data.results;
 
-            // 3 Family General Knowledge Questions
             let triviaBatch = fresh.slice(0, 3).map(q => ({
                 type: 'trivia',
                 category: decodeHTML(q.category),
@@ -50,9 +40,9 @@ async function startNewRound() {
                 options: [...q.incorrect_answers.map(ans => decodeHTML(ans)), decodeHTML(q.correct_answer)]
             }));
 
-            // 2 Dynamic Flag Questions pulled from the 195 World Country Pool
-            let flag1 = generateDynamicFlagQuestion();
-            let flag2 = generateDynamicFlagQuestion();
+            // Pull 2 distinct flag questions from our built-in bank
+            let flag1 = getUniqueFlagQuestion();
+            let flag2 = getUniqueFlagQuestion();
 
             currentRoundQuestions = [...triviaBatch, flag1, flag2];
             shuffleArray(currentRoundQuestions);
@@ -61,47 +51,39 @@ async function startNewRound() {
             throw new Error("API Filter");
         }
     } catch (e) {
-        // Fallback round if network drops
+        // Dynamic backup - varied family questions (NO static repetition!)
         currentRoundQuestions = [
-            generateDynamicFlagQuestion(),
-            { type: 'trivia', category: 'Animals', question: 'What is the fastest land animal in the world?', answer: 'Cheetah', options: ['Lion', 'Cheetah', 'Horse', 'Leopard'] },
-            generateDynamicFlagQuestion(),
+            getUniqueFlagQuestion(),
+            { type: 'trivia', category: 'Animals', question: 'What is the largest animal currently living on Earth?', answer: 'Blue Whale', options: ['African Elephant', 'Blue Whale', 'Giraffe', 'Colossal Squid'] },
+            getUniqueFlagQuestion(),
             { type: 'trivia', category: 'Film', question: 'Which superhero is also known as Peter Parker?', answer: 'Spider-Man', options: ['Batman', 'Iron Man', 'Spider-Man', 'Superman'] },
-            generateDynamicFlagQuestion()
+            { type: 'trivia', category: 'Science', question: 'What gas do humans need to breathe to survive?', answer: 'Oxygen', options: ['Carbon Dioxide', 'Oxygen', 'Nitrogen', 'Helium'] }
         ];
         loadQuestion();
     }
 }
 
-// Generate a random flag question from 195 World Countries
-function generateDynamicFlagQuestion() {
-    if (!allWorldCountries || allWorldCountries.length < 4) {
-        // Quick backup if countries API is still loading
+function getUniqueFlagQuestion() {
+    if (typeof flagQuestionsBank === 'undefined' || flagQuestionsBank.length === 0) {
         return {
             type: 'trivia',
             category: 'Geography',
-            question: 'What is the capital city of Australia?',
-            answer: 'Canberra',
-            options: ['Sydney', 'Melbourne', 'Canberra', 'Perth']
+            question: 'Which country is home to the city of Tokyo?',
+            answer: 'Japan',
+            options: ['China', 'Japan', 'South Korea', 'Thailand']
         };
     }
 
-    let pool = [...allWorldCountries];
-    shuffleArray(pool);
-    let selected = pool.slice(0, 4);
-    let correct = selected[0];
+    // Pick a flag question that hasn't been used yet in this session
+    let availableIndices = flagQuestionsBank.map((_, i) => i).filter(i => !usedFlagIndices.includes(i));
+    if (availableIndices.length === 0) {
+        usedFlagIndices = []; // Reset rotation if all flags have been seen
+        availableIndices = flagQuestionsBank.map((_, i) => i);
+    }
 
-    // Uses FlagCDN to render high-res flags for ANY country code in the world
-    let flagCode = correct.cca2.toLowerCase();
-
-    return {
-        type: 'flag',
-        category: 'Flag Identification',
-        question: 'Which country does this flag belong to?',
-        flagUrl: `https://flagcdn.com/w320/${flagCode}.png`,
-        answer: correct.name.common,
-        options: selected.map(c => c.name.common)
-    };
+    let randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+    usedFlagIndices.push(randomIndex);
+    return flagQuestionsBank[randomIndex];
 }
 
 function loadQuestion() {
@@ -145,7 +127,7 @@ function handleAnswer(selectedOpt, q, clickedBtn, grid) {
     if (selectedOpt === q.answer) {
         clickedBtn.classList.add('correct');
         roundScore++;
-        if (window.confetti) confetti({ particleCount: 35, spread: 60, origin: { y: 0.6 } });
+        if (window.confetti) confetti({ particleCount: 30, spread: 50, origin: { y: 0.6 } });
 
         if (q.question && !solvedQuestions.includes(q.question)) {
             solvedQuestions.push(q.question);
@@ -176,13 +158,13 @@ function showSummary() {
 
     let feedback = document.getElementById('adaptive-feedback');
     if (roundScore >= 4) {
-        feedback.innerText = "🔥 Great round! Stepping up the challenge for next round.";
+        feedback.innerText = "Crushing it! Stepping up the challenge slightly.";
         if (currentDifficulty === 'easy') currentDifficulty = 'medium';
     } else if (roundScore <= 2) {
-        feedback.innerText = "⚡ Adjusting pacing to keep questions fun and relaxed.";
+        feedback.innerText = "Keeping questions relaxed and fun.";
         currentDifficulty = 'easy';
     } else {
-        feedback.innerText = "🎯 Balanced performance!";
+        feedback.innerText = "Balanced performance!";
     }
 }
 
