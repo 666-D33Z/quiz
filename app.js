@@ -1,22 +1,27 @@
-// --- STATE & ADAPTIVE INTELLIGENCE ---
+// Relatable Family General Knowledge Categories (Film, TV, Games, Animals, Sports, Science)
+const familyCategories = [11, 14, 15, 17, 18, 21, 22, 23, 27];
+
 let currentRoundQuestions = [];
 let currentQuestionIndex = 0;
 let currentRound = 1;
 let roundScore = 0;
-let currentDifficulty = 'easy'; // Starts balanced, adapts based on performance
+let currentDifficulty = 'easy';
 
-let solvedQuestions = JSON.parse(localStorage.getItem('solvedSmartTrivia')) || [];
-let globalCountries = [];
+let solvedQuestions = JSON.parse(localStorage.getItem('solvedShowdownTrivia')) || [];
+let allWorldCountries = [];
 
 function startGame() {
     document.getElementById('setup-screen').classList.add('hidden');
     document.getElementById('quiz-screen').classList.remove('hidden');
     
-    // Preload country data for flags/images
-    fetch('https://restcountries.com/3.1/all?fields=name,flags,capital')
+    // Fetch ALL ~195 World Countries live so flags never loop or run out
+    fetch('https://restcountries.com/3.1/all?fields=name,cca2')
         .then(res => res.json())
-        .then(data => { globalCountries = data; })
-        .catch(err => console.error("Country preload error", err))
+        .then(data => {
+            // Filter out territories without clear names
+            allWorldCountries = data.filter(c => c.name && c.name.common && c.cca2);
+        })
+        .catch(err => console.error("Error loading world countries:", err))
         .finally(() => startNewRound());
 }
 
@@ -24,19 +29,19 @@ async function startNewRound() {
     currentQuestionIndex = 0;
     roundScore = 0;
     
-    document.getElementById('question-text').innerText = "Preparing balanced challenges...";
+    document.getElementById('question-text').innerText = "⚡ Fetching fresh questions & flags...";
     document.getElementById('options-grid').innerHTML = '';
 
     try {
-        // Fetch fresh trivia based on current adaptive difficulty
-        let res = await fetch(`https://opentdb.com/api.php?amount=10&difficulty=${currentDifficulty}&type=multiple`);
+        let randomCategory = familyCategories[Math.floor(Math.random() * familyCategories.length)];
+        let res = await fetch(`https://opentdb.com/api.php?amount=10&category=${randomCategory}&difficulty=${currentDifficulty}&type=multiple`);
         let data = await res.json();
 
         if (data.results && data.results.length > 0) {
             let fresh = data.results.filter(q => !solvedQuestions.includes(q.question));
             if (fresh.length < 3) fresh = data.results;
 
-            // 3 General Knowledge Trivia questions
+            // 3 Family General Knowledge Questions
             let triviaBatch = fresh.slice(0, 3).map(q => ({
                 type: 'trivia',
                 category: decodeHTML(q.category),
@@ -45,50 +50,55 @@ async function startNewRound() {
                 options: [...q.incorrect_answers.map(ans => decodeHTML(ans)), decodeHTML(q.correct_answer)]
             }));
 
-            // 2 Flag / Country Image Identification questions
-            let flag1 = generateFlagQuestion();
-            let flag2 = generateFlagQuestion();
+            // 2 Dynamic Flag Questions pulled from the 195 World Country Pool
+            let flag1 = generateDynamicFlagQuestion();
+            let flag2 = generateDynamicFlagQuestion();
 
             currentRoundQuestions = [...triviaBatch, flag1, flag2];
             shuffleArray(currentRoundQuestions);
             loadQuestion();
         } else {
-            throw new Error("API Limit");
+            throw new Error("API Filter");
         }
     } catch (e) {
-        console.warn("Using offline fallback generator");
+        // Fallback round if network drops
         currentRoundQuestions = [
-            generateFlagQuestion(),
-            { type: 'trivia', category: 'General Knowledge', question: 'What is the capital of France?', answer: 'Paris', options: ['London', 'Berlin', 'Paris', 'Madrid'] },
-            generateFlagQuestion(),
-            { type: 'trivia', category: 'Science', question: 'Which planet is closest to the Sun?', answer: 'Mercury', options: ['Venus', 'Mercury', 'Earth', 'Mars'] },
-            generateFlagQuestion()
+            generateDynamicFlagQuestion(),
+            { type: 'trivia', category: 'Animals', question: 'What is the fastest land animal in the world?', answer: 'Cheetah', options: ['Lion', 'Cheetah', 'Horse', 'Leopard'] },
+            generateDynamicFlagQuestion(),
+            { type: 'trivia', category: 'Film', question: 'Which superhero is also known as Peter Parker?', answer: 'Spider-Man', options: ['Batman', 'Iron Man', 'Spider-Man', 'Superman'] },
+            generateDynamicFlagQuestion()
         ];
         loadQuestion();
     }
 }
 
-function generateFlagQuestion() {
-    if (!globalCountries || globalCountries.length === 0) {
+// Generate a random flag question from 195 World Countries
+function generateDynamicFlagQuestion() {
+    if (!allWorldCountries || allWorldCountries.length < 4) {
+        // Quick backup if countries API is still loading
         return {
             type: 'trivia',
             category: 'Geography',
-            question: 'Which country is known for the Pyramids of Giza?',
-            answer: 'Egypt',
-            options: ['Greece', 'Egypt', 'Mexico', 'Peru']
+            question: 'What is the capital city of Australia?',
+            answer: 'Canberra',
+            options: ['Sydney', 'Melbourne', 'Canberra', 'Perth']
         };
     }
 
-    let pool = [...globalCountries];
+    let pool = [...allWorldCountries];
     shuffleArray(pool);
     let selected = pool.slice(0, 4);
     let correct = selected[0];
 
+    // Uses FlagCDN to render high-res flags for ANY country code in the world
+    let flagCode = correct.cca2.toLowerCase();
+
     return {
         type: 'flag',
-        category: 'Country Identification',
+        category: 'Flag Identification',
         question: 'Which country does this flag belong to?',
-        flagUrl: correct.flags.png,
+        flagUrl: `https://flagcdn.com/w320/${flagCode}.png`,
         answer: correct.name.common,
         options: selected.map(c => c.name.common)
     };
@@ -102,7 +112,6 @@ function loadQuestion() {
     document.getElementById('category-tag').innerText = q.category;
     document.getElementById('question-text').innerText = q.question;
 
-    // Handle Media Display (Flags / Country Images)
     const mediaContainer = document.getElementById('media-container');
     const quizImg = document.getElementById('quiz-image');
 
@@ -114,7 +123,6 @@ function loadQuestion() {
         quizImg.src = '';
     }
 
-    // Render 2x2 Options Grid Above
     const grid = document.getElementById('options-grid');
     grid.innerHTML = '';
 
@@ -137,11 +145,11 @@ function handleAnswer(selectedOpt, q, clickedBtn, grid) {
     if (selectedOpt === q.answer) {
         clickedBtn.classList.add('correct');
         roundScore++;
-        if (window.confetti) confetti({ particleCount: 30, spread: 50, origin: { y: 0.6 } });
+        if (window.confetti) confetti({ particleCount: 35, spread: 60, origin: { y: 0.6 } });
 
         if (q.question && !solvedQuestions.includes(q.question)) {
             solvedQuestions.push(q.question);
-            localStorage.setItem('solvedSmartTrivia', JSON.stringify(solvedQuestions));
+            localStorage.setItem('solvedShowdownTrivia', JSON.stringify(solvedQuestions));
         }
     } else {
         clickedBtn.classList.add('incorrect');
@@ -150,7 +158,6 @@ function handleAnswer(selectedOpt, q, clickedBtn, grid) {
         });
     }
 
-    // Smooth transition to next question after short delay
     setTimeout(() => {
         currentQuestionIndex++;
         if (currentQuestionIndex < currentRoundQuestions.length) {
@@ -167,18 +174,15 @@ function showSummary() {
 
     document.getElementById('summary-score').innerText = `${roundScore} / 5`;
 
-    // Adaptive Intelligence Logic (Adjusting difficulty based on performance)
     let feedback = document.getElementById('adaptive-feedback');
     if (roundScore >= 4) {
-        feedback.innerText = "Brilliant performance. Scaling up challenge for the next round.";
+        feedback.innerText = "🔥 Great round! Stepping up the challenge for next round.";
         if (currentDifficulty === 'easy') currentDifficulty = 'medium';
-        else if (currentDifficulty === 'medium') currentDifficulty = 'hard';
     } else if (roundScore <= 2) {
-        feedback.innerText = "Adjusting pacing to keep things balanced and engaging.";
-        if (currentDifficulty === 'hard') currentDifficulty = 'medium';
-        else if (currentDifficulty === 'medium') currentDifficulty = 'easy';
+        feedback.innerText = "⚡ Adjusting pacing to keep questions fun and relaxed.";
+        currentDifficulty = 'easy';
     } else {
-        feedback.innerText = "Great teamwork! Difficulty is perfectly balanced.";
+        feedback.innerText = "🎯 Balanced performance!";
     }
 }
 
