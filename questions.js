@@ -1,4 +1,2 @@
-const quizConfig = {
-    appName: "Table Showdown Pro",
-    version: "4.0"
-};
+// Clean config file - No limited flag lists
+const quizConfig = { appName: "Table Showdown Pro" };
