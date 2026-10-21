@@ -5,27 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>⚡ DINNER SHOWDOWN ⚡</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Confetti Library -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
     <div class="container">
         <header>
             <h1 class="glow-title">⚡ TABLE SHOWDOWN ⚡</h1>
-            <p class="tagline">🔥 TRIVIA & LIST BATTLES 🔥</p>
+            <p class="tagline">🔥 TEAM TRIVIA & LIST BATTLES 🔥</p>
         </header>
 
         <!-- Setup Screen -->
         <section id="setup-screen" class="screen">
-            <div class="card">
-                <h2>🎮 SELECT YOUR SQUAD</h2>
-                <p>Enter names for up to 4 players:</p>
-                <div class="player-inputs">
-                    <input type="text" id="p1" placeholder="⚡ Player 1 (Eldest)">
-                    <input type="text" id="p2" placeholder="🔥 Player 2 (Youngest)">
-                    <input type="text" id="p3" placeholder="👑 Player 3 (Mrs)">
-                    <input type="text" id="p4" placeholder="🎯 Player 4 (You)">
-                </div>
+            <div class="card text-center">
+                <h2>🍽️ FAMILY TABLE SQUAD</h2>
+                <p>No individual scores—just one team taking on the trivia machine together!</p>
                 <button class="btn main-btn" onclick="startGame()">🚀 START THE SHOW!</button>
             </div>
         </section>
@@ -61,10 +54,13 @@
                 </div>
             </div>
 
-            <!-- Score Awarding Grid for List Rounds -->
+            <!-- Team Point Tally for List Rounds -->
             <div id="score-section" class="score-section hidden">
-                <h3 id="score-instruction">🏆 AWARD POINTS:</h3>
-                <div id="player-score-controls" class="player-grid"></div>
+                <h3 id="score-instruction">🏆 TEAM POINTS COLLECTED:</h3>
+                <div class="team-score-controls">
+                    <button class="btn main-btn" onclick="addTeamPoint()">+1 Point For The Team! 🎯</button>
+                    <p id="list-current-tally" class="tally-display">Points earned this question: 0</p>
+                </div>
             </div>
 
             <button id="next-btn" class="btn main-btn hidden" onclick="nextQuestion()">NEXT QUESTION ➡️</button>
@@ -72,15 +68,14 @@
 
         <!-- Summary Screen -->
         <section id="summary-screen" class="screen hidden">
-            <div class="card">
+            <div class="card text-center">
                 <h2 class="glow-title">🎉 ROUND COMPLETE! 🎉</h2>
-                <div id="scoreboard" class="scoreboard-list"></div>
+                <div id="scoreboard" class="scoreboard-display"></div>
                 <button class="btn main-btn" onclick="startNextRound()">NEXT ROUND 🚀</button>
             </div>
         </section>
     </div>
 
-    <!-- Correct linking order -->
     <script src="questions.js"></script>
     <script src="app.js"></script>
 </body>
