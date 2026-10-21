@@ -26,7 +26,11 @@ function playSound(type) {
 }
 
 // --- GAME STATE ---
-let players = [];
+let teamScore = 0;
+let roundTotalAvailable = 0;
+let currentRoundEarned = 0;
+let currentRoundAvailable = 0;
+
 let currentRoundQuestions = [];
 let currentQuestionIndex = 0;
 let currentRound = 1;
@@ -35,13 +39,7 @@ const questionsPerRound = 5;
 let solvedQuestions = JSON.parse(localStorage.getItem('solvedTriviaQuestions')) || [];
 
 function startGame() {
-    players = [];
-    for (let i = 1; i <= 4; i++) {
-        let name = document.getElementById(`p${i}`).value.trim();
-        if (name) players.push({ name: name, score: 0 });
-    }
-    if (players.length === 0) players.push({ name: "⚡ SQUAD", score: 0 });
-
+    playSound('correct');
     document.getElementById('setup-screen').classList.add('hidden');
     document.getElementById('quiz-screen').classList.remove('hidden');
     startNewRound();
@@ -49,20 +47,17 @@ function startGame() {
 
 async function startNewRound() {
     currentQuestionIndex = 0;
-    
-    // Determine difficulty based on round progression
-    let currentDifficulty = 'easy';
-    if (currentRound >= 3 && currentRound < 5) {
-        currentDifficulty = 'medium';
-    } else if (currentRound >= 5) {
-        currentDifficulty = 'hard';
-    }
+    currentRoundEarned = 0;
+    currentRoundAvailable = 0;
 
-    document.getElementById('question-text').innerText = `⚡ Fetching ${currentDifficulty.toUpperCase()} trivia & flag challenges...`;
+    let currentDifficulty = 'easy';
+    if (currentRound >= 3 && currentRound < 5) currentDifficulty = 'medium';
+    else if (currentRound >= 5) currentDifficulty = 'hard';
+
+    document.getElementById('question-text').innerText = `⚡ Fetching ${currentDifficulty.toUpperCase()} team challenges...`;
     document.getElementById('mc-container').innerHTML = '';
 
     try {
-        // Fetch questions filtered specifically by the current difficulty tier
         let response = await fetch(`https://opentdb.com/api.php?amount=10&difficulty=${currentDifficulty}&type=multiple`);
         let data = await response.json();
 
@@ -78,19 +73,22 @@ async function startNewRound() {
                     category: decodeHTML(q.category),
                     question: decodeHTML(q.question),
                     answer: decodedCorrect,
-                    options: [...decodedIncorrects, decodedCorrect]
+                    options: [...decodedIncorrects, decodedCorrect],
+                    pointsAvailable: 1
                 };
             });
 
-            // Add 1 List Battle
             let listChallenge = generateRandomListChallenge();
-            
-            // Add 1 Picture / Flag Challenge!
             let flagChallenge = await generateFlagChallenge();
 
             currentRoundQuestions = [...triviaBatch, listChallenge, flagChallenge];
-            shuffleArray(currentRoundQuestions);
+            
+            // Calculate total points available for this round
+            currentRoundQuestions.forEach(q => {
+                currentRoundAvailable += q.pointsAvailable;
+            });
 
+            shuffleArray(currentRoundQuestions);
             loadQuestion();
         } else {
             setTimeout(startNewRound, 2000);
@@ -101,13 +99,11 @@ async function startNewRound() {
     }
 }
 
-// --- PICTURE / FLAG CHALLENGE GENERATOR ---
+// --- FLAG CHALLENGE ---
 async function generateFlagChallenge() {
     try {
         let res = await fetch('https://restcountries.com/3.1/all?fields=name,flags');
         let countries = await res.json();
-        
-        // Pick 4 random countries
         shuffleArray(countries);
         let selected = countries.slice(0, 4);
         let correctCountry = selected[0];
@@ -118,15 +114,15 @@ async function generateFlagChallenge() {
             question: "🚩 PICTURE ROUND: Which country does this flag belong to?",
             flagUrl: correctCountry.flags.png,
             answer: correctCountry.name.common,
-            options: selected.map(c => c.name.common)
+            options: selected.map(c => c.name.common),
+            pointsAvailable: 1
         };
     } catch (err) {
-        // Fallback if flag API fails
         return generateRandomListChallenge();
     }
 }
 
-// --- ALGORITHMIC LIST GENERATOR ---
+// --- LIST CHALLENGE ---
 function generateRandomListChallenge() {
     const listTypes = ['englishCounties', 'europeanCountries', 'usStates'];
     let chosenKey = listTypes[Math.floor(Math.random() * listTypes.length)];
@@ -134,7 +130,6 @@ function generateRandomListChallenge() {
 
     let randomLetter = listObj.promptLetter[Math.floor(Math.random() * listObj.promptLetter.length)];
     let validAnswers = listObj.data[randomLetter];
-
     let titleName = chosenKey === 'englishCounties' ? "English Counties" : chosenKey === 'europeanCountries' ? "European Countries" : "US States";
 
     return {
@@ -142,6 +137,7 @@ function generateRandomListChallenge() {
         category: listObj.category,
         question: `📋 LIST BATTLE: Name as many ${titleName} starting with '${randomLetter}' as you can!`,
         maxPoints: validAnswers.length,
+        pointsAvailable: validAnswers.length, // Dynamic max points for this specific list
         answer: validAnswers.join(", ")
     };
 }
@@ -152,11 +148,10 @@ function loadQuestion() {
     document.getElementById('category-badge').innerText = q.category;
     document.getElementById('type-badge').innerText = q.type === 'flag' ? '🖼️ PICTURE ROUND' : q.type === 'list' ? '📋 LIST BATTLE' : '❓ LIVE TRIVIA';
     
-    // Display Question Text & Flag Image if applicable
     if (q.type === 'flag') {
         document.getElementById('question-text').innerHTML = `
             ${q.question}<br>
-            <img src="${q.flagUrl}" alt="Flag" style="max-width: 200px; border-radius: 10px; margin-top: 15px; border: 3px solid var(--neon-blue); shadow: 0 0 15px var(--neon-blue);">
+            <img src="${q.flagUrl}" alt="Flag" style="max-width: 200px; border-radius: 10px; margin-top: 15px; border: 3px solid var(--neon-blue);">
         `;
     } else {
         document.getElementById('question-text').innerText = q.question;
@@ -184,7 +179,11 @@ function loadQuestion() {
         scoreSection.classList.remove('hidden');
         nextBtn.classList.remove('hidden');
         document.getElementById('list-answer-box').classList.add('hidden');
-        renderListScoring(q);
+        
+        // Reset list tally tracker for this specific question
+        q.earnedThisQuestion = 0;
+        document.getElementById('list-current-tally').innerText = `Points earned this question: 0 out of ${q.maxPoints}`;
+        document.getElementById('score-instruction').innerText = `🏆 AWARD TEAM POINTS (Out of ${q.maxPoints} total items):`;
     }
 }
 
@@ -205,7 +204,8 @@ function renderMC(q) {
             if (opt === q.answer) {
                 btn.classList.add('correct');
                 playSound('correct');
-                players[0].score += 1;
+                currentRoundEarned += 1;
+                teamScore += 1;
                 if (window.confetti) confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
 
                 if (!solvedQuestions.includes(q.question)) {
@@ -223,28 +223,21 @@ function renderMC(q) {
     });
 }
 
+function addTeamPoint() {
+    let q = currentRoundQuestions[currentQuestionIndex];
+    if (q.earnedThisQuestion < q.maxPoints) {
+        q.earnedThisQuestion++;
+        currentRoundEarned++;
+        teamScore++;
+        playSound('correct');
+        if (window.confetti) confetti({ particleCount: 25, spread: 40, origin: { y: 0.8 } });
+        document.getElementById('list-current-tally').innerText = `Points earned this question: ${q.earnedThisQuestion} out of ${q.maxPoints}`;
+    }
+}
+
 function toggleListAnswer() {
     document.getElementById('list-answer-box').classList.remove('hidden');
     document.getElementById('list-answer-text').innerText = currentRoundQuestions[currentQuestionIndex].answer;
-}
-
-function renderListScoring(q) {
-    const container = document.getElementById('player-score-controls');
-    container.innerHTML = '';
-    
-    document.getElementById('score-section').querySelector('h3').innerText = `🏆 AWARD POINTS (Tap for every item correct out of ${q.maxPoints}):`;
-
-    players.forEach((p) => {
-        let btn = document.createElement('button');
-        btn.className = 'score-btn';
-        btn.innerText = `${p.name} (+1 Pt)`;
-        btn.onclick = () => {
-            p.score += 1;
-            playSound('correct');
-            if (window.confetti) confetti({ particleCount: 30, spread: 50 });
-        };
-        container.appendChild(btn);
-    });
 }
 
 function nextQuestion() {
@@ -260,9 +253,9 @@ function showSummary() {
     if (window.confetti) confetti({ particleCount: 100, spread: 90 });
     document.getElementById('quiz-screen').classList.add('hidden');
     document.getElementById('summary-screen').classList.remove('hidden');
+
     let sb = document.getElementById('scoreboard');
-    let sorted = [...players].sort((a, b) => b.score - a.score);
-    sb.innerHTML = '<ul>' + sorted.map(p => `<li><span>👑 ${p.name}</span> <span>${p.score} PTS</span></li>`).join('') + '</ul>';
+    sb.innerHTML = `🌟 Team Score: ${currentRoundEarned} out of ${currentRoundAvailable} points! 🌟`;
 }
 
 function startNextRound() {
