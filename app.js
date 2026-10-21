@@ -1,5 +1,5 @@
 // Relatable Family General Knowledge Categories ONLY
-const familyCategories = [11, 14, 15, 17, 18, 21, 22, 23, 27]; // Movies, TV, Video Games, Science, Sports, Geography, Animals
+const familyCategories = [11, 14, 15, 17, 18, 21, 22, 23, 27];
 
 let currentRoundQuestions = [];
 let currentQuestionIndex = 0;
@@ -8,12 +8,20 @@ let roundScore = 0;
 let currentDifficulty = 'easy';
 
 let solvedQuestions = JSON.parse(localStorage.getItem('solvedShowdownTrivia')) || [];
-let usedFlagIndices = [];
+let allWorldCountries = [];
 
 function startGame() {
     document.getElementById('setup-screen').classList.add('hidden');
     document.getElementById('quiz-screen').classList.remove('hidden');
-    startNewRound();
+    
+    // Fetch ALL ~195 countries in the world live
+    fetch('https://restcountries.com/3.1/all?fields=name,cca2')
+        .then(res => res.json())
+        .then(data => {
+            allWorldCountries = data.filter(c => c.name && c.name.common && c.cca2);
+        })
+        .catch(err => console.error("Error loading world countries:", err))
+        .finally(() => startNewRound());
 }
 
 async function startNewRound() {
@@ -40,9 +48,9 @@ async function startNewRound() {
                 options: [...q.incorrect_answers.map(ans => decodeHTML(ans)), decodeHTML(q.correct_answer)]
             }));
 
-            // Pull 2 distinct flag questions from our built-in bank
-            let flag1 = getUniqueFlagQuestion();
-            let flag2 = getUniqueFlagQuestion();
+            // Generate 2 flag questions dynamically from the 195 world country dataset
+            let flag1 = generateLiveFlagQuestion();
+            let flag2 = generateLiveFlagQuestion();
 
             currentRoundQuestions = [...triviaBatch, flag1, flag2];
             shuffleArray(currentRoundQuestions);
@@ -51,11 +59,11 @@ async function startNewRound() {
             throw new Error("API Filter");
         }
     } catch (e) {
-        // Dynamic backup - varied family questions (NO static repetition!)
+        // Varied fallback trivia if network drops
         currentRoundQuestions = [
-            getUniqueFlagQuestion(),
+            generateLiveFlagQuestion(),
             { type: 'trivia', category: 'Animals', question: 'What is the largest animal currently living on Earth?', answer: 'Blue Whale', options: ['African Elephant', 'Blue Whale', 'Giraffe', 'Colossal Squid'] },
-            getUniqueFlagQuestion(),
+            generateLiveFlagQuestion(),
             { type: 'trivia', category: 'Film', question: 'Which superhero is also known as Peter Parker?', answer: 'Spider-Man', options: ['Batman', 'Iron Man', 'Spider-Man', 'Superman'] },
             { type: 'trivia', category: 'Science', question: 'What gas do humans need to breathe to survive?', answer: 'Oxygen', options: ['Carbon Dioxide', 'Oxygen', 'Nitrogen', 'Helium'] }
         ];
@@ -63,8 +71,9 @@ async function startNewRound() {
     }
 }
 
-function getUniqueFlagQuestion() {
-    if (typeof flagQuestionsBank === 'undefined' || flagQuestionsBank.length === 0) {
+// Picks a random country from ALL 195 world countries
+function generateLiveFlagQuestion() {
+    if (!allWorldCountries || allWorldCountries.length < 4) {
         return {
             type: 'trivia',
             category: 'Geography',
@@ -74,16 +83,20 @@ function getUniqueFlagQuestion() {
         };
     }
 
-    // Pick a flag question that hasn't been used yet in this session
-    let availableIndices = flagQuestionsBank.map((_, i) => i).filter(i => !usedFlagIndices.includes(i));
-    if (availableIndices.length === 0) {
-        usedFlagIndices = []; // Reset rotation if all flags have been seen
-        availableIndices = flagQuestionsBank.map((_, i) => i);
-    }
+    let pool = [...allWorldCountries];
+    shuffleArray(pool);
+    let selected = pool.slice(0, 4);
+    let correct = selected[0];
+    let flagCode = correct.cca2.toLowerCase();
 
-    let randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
-    usedFlagIndices.push(randomIndex);
-    return flagQuestionsBank[randomIndex];
+    return {
+        type: 'flag',
+        category: 'Flag Identification',
+        question: 'Which country does this flag belong to?',
+        flagUrl: `https://flagcdn.com/w320/${flagCode}.png`,
+        answer: correct.name.common,
+        options: selected.map(c => c.name.common)
+    };
 }
 
 function loadQuestion() {
