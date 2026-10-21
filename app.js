@@ -1,3 +1,41 @@
+// --- MASTER DATA FOR LIST ROUNDS (Embedded directly to prevent loading issues) ---
+const listMasterData = {
+    englishCounties: {
+        category: "Geography",
+        promptLetter: ["B", "S", "W", "C", "N", "L", "Y"],
+        data: {
+            "B": ["Bedfordshire", "Berkshire", "Buckinghamshire", "Bristol"],
+            "S": ["Shropshire", "Somerset", "Staffordshire", "Suffolk", "Surrey", "Sussex"],
+            "W": ["Warwickshire", "Westmorland", "Wiltshire", "Worcestershire"],
+            "C": ["Cambridgeshire", "Cheshire", "Cornwall", "Cumberland"],
+            "N": ["Norfolk", "Northamptonshire", "Northumberland", "Nottinghamshire"],
+            "L": ["Lancashire", "Leicestershire", "Lincolnshire"],
+            "Y": ["Yorkshire"]
+        }
+    },
+    europeanCountries: {
+        category: "Geography",
+        promptLetter: ["S", "F", "B", "A", "M"],
+        data: {
+            "S": ["Spain", "Sweden", "Switzerland", "Slovakia", "Slovenia", "Serbia"],
+            "F": ["France", "Finland"],
+            "B": ["Belgium", "Bulgaria", "Belarus", "Bosnia and Herzegovina"],
+            "A": ["Austria", "Albania", "Andorra"],
+            "M": ["Monaco", "Montenegro", "Moldova", "Malta"]
+        }
+    },
+    usStates: {
+        category: "Geography",
+        promptLetter: ["M", "N", "C", "P"],
+        data: {
+            "M": ["Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana"],
+            "N": ["Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota"],
+            "C": ["California", "Colorado", "Connecticut"],
+            "P": ["Pennsylvania"]
+        }
+    }
+};
+
 // --- AUDIO SYNTH ---
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 function playSound(type) {
@@ -27,7 +65,6 @@ function playSound(type) {
 
 // --- GAME STATE ---
 let teamScore = 0;
-let roundTotalAvailable = 0;
 let currentRoundEarned = 0;
 let currentRoundAvailable = 0;
 
@@ -91,11 +128,15 @@ async function startNewRound() {
             shuffleArray(currentRoundQuestions);
             loadQuestion();
         } else {
-            setTimeout(startNewRound, 2000);
+            setTimeout(startNewRound, 1500);
         }
     } catch (error) {
         console.error("API Error:", error);
-        setTimeout(startNewRound, 2000);
+        // Fallback if API is offline: generate pure list challenge round
+        let fallbackList = [generateRandomListChallenge(), generateRandomListChallenge(), generateRandomListChallenge(), generateRandomListChallenge(), generateRandomListChallenge()];
+        currentRoundQuestions = fallbackList;
+        currentRoundQuestions.forEach(q => currentRoundAvailable += q.pointsAvailable);
+        loadQuestion();
     }
 }
 
@@ -137,7 +178,7 @@ function generateRandomListChallenge() {
         category: listObj.category,
         question: `📋 LIST BATTLE: Name as many ${titleName} starting with '${randomLetter}' as you can!`,
         maxPoints: validAnswers.length,
-        pointsAvailable: validAnswers.length, // Dynamic max points for this specific list
+        pointsAvailable: validAnswers.length,
         answer: validAnswers.join(", ")
     };
 }
@@ -180,7 +221,6 @@ function loadQuestion() {
         nextBtn.classList.remove('hidden');
         document.getElementById('list-answer-box').classList.add('hidden');
         
-        // Reset list tally tracker for this specific question
         q.earnedThisQuestion = 0;
         document.getElementById('list-current-tally').innerText = `Points earned this question: 0 out of ${q.maxPoints}`;
         document.getElementById('score-instruction').innerText = `🏆 AWARD TEAM POINTS (Out of ${q.maxPoints} total items):`;
