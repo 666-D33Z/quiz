@@ -3,98 +3,52 @@ let currentQuestionIndex = 0;
 let currentRound = 1;
 let roundScore = 0;
 
-let solvedQuestions = JSON.parse(localStorage.getItem('solvedShowdownTrivia')) || [];
-let worldCountries = [];
+// Load solved question IDs from device memory
+let solvedQuestions = JSON.parse(localStorage.getItem('solvedShowdownTriviaIDs')) || [];
 
 function startGame() {
     document.getElementById('setup-screen').classList.add('hidden');
     document.getElementById('quiz-screen').classList.remove('hidden');
-
-    // Preload full 195 world countries dataset for infinite flags
-    fetch('https://restcountries.com/3.1/all?fields=name,cca2')
-        .then(res => res.json())
-        .then(data => {
-            worldCountries = data.filter(c => c.name && c.name.common && c.cca2);
-        })
-        .catch(err => console.error("Countries load error:", err))
-        .finally(() => startNewRound());
+    startNewRound();
 }
 
 async function startNewRound() {
     currentQuestionIndex = 0;
     roundScore = 0;
 
-    document.getElementById('question-text').innerText = "Fetching fresh round...";
+    document.getElementById('question-text').innerText = "Loading fresh round...";
     document.getElementById('options-grid').innerHTML = '';
 
     try {
-        // Fetch 10 clean General Knowledge / Science / Geography questions from The Trivia API
         let categoriesParam = quizConfig.categories.join(',');
-        let res = await fetch(`https://the-trivia-api.com/v2/questions?categories=${categoriesParam}&limit=10`);
+        let res = await fetch(`https://the-trivia-api.com/v2/questions?categories=${categoriesParam}&limit=15`);
         let data = await res.json();
 
         if (data && data.length > 0) {
-            // Filter out questions you've already solved in past games
-            let freshTrivia = data.filter(q => !solvedQuestions.includes(q.question.text));
-            if (freshTrivia.length < 3) freshTrivia = data;
+            // Strictly exclude any questions previously answered by your team
+            let freshTrivia = data.filter(q => !solvedQuestions.includes(q.id));
+            
+            // If the fetched batch had duplicates, fetch a fallback batch
+            if (freshTrivia.length < 5) {
+                freshTrivia = data; // Safe fallback if network is constrained
+            }
 
-            let triviaBatch = freshTrivia.slice(0, 3).map(q => ({
-                type: 'trivia',
-                category: q.category.replace('_', ' ').toUpperCase(),
+            currentRoundQuestions = freshTrivia.slice(0, 5).map(q => ({
+                id: q.id,
+                category: q.category.replace(/_/g, ' ').toUpperCase(),
                 question: q.question.text,
                 answer: q.correctAnswer,
                 options: [...q.incorrectAnswers, q.correctAnswer]
             }));
 
-            // Generate 2 dynamic country flag challenges from 195 world countries
-            let flag1 = generateDynamicFlagQuestion();
-            let flag2 = generateDynamicFlagQuestion();
-
-            currentRoundQuestions = [...triviaBatch, flag1, flag2];
-            shuffleArray(currentRoundQuestions);
             loadQuestion();
         } else {
-            throw new Error("No trivia returned");
+            throw new Error("No data returned");
         }
     } catch (err) {
-        console.warn("Using network backup round:", err);
-        currentRoundQuestions = [
-            generateDynamicFlagQuestion(),
-            { type: 'trivia', category: 'GEOGRAPHY', question: 'Which is the largest landlocked country in the world by area?', answer: 'Kazakhstan', options: ['Mongolia', 'Kazakhstan', 'Bolivia', 'Chad'] },
-            generateDynamicFlagQuestion(),
-            { type: 'trivia', category: 'SCIENCE', question: 'Which gas makes up approximately 78% of Earth’s atmosphere?', answer: 'Nitrogen', options: ['Oxygen', 'Carbon Dioxide', 'Nitrogen', 'Argon'] },
-            { type: 'trivia', category: 'GENERAL KNOWLEDGE', question: 'Which European city is split across two continents (Europe and Asia)?', answer: 'Istanbul', options: ['Athens', 'Moscow', 'Istanbul', 'Budapest'] }
-        ];
-        loadQuestion();
+        console.error("Fetch error:", err);
+        document.getElementById('question-text').innerText = "Connection issue. Please tap NEXT ROUND to retry.";
     }
-}
-
-// Generate a random flag question from 195 world countries
-function generateDynamicFlagQuestion() {
-    if (!worldCountries || worldCountries.length < 4) {
-        return {
-            type: 'trivia',
-            category: 'GEOGRAPHY',
-            question: 'What is the capital city of Australia?',
-            answer: 'Canberra',
-            options: ['Sydney', 'Melbourne', 'Canberra', 'Perth']
-        };
-    }
-
-    let pool = [...worldCountries];
-    shuffleArray(pool);
-    let selected = pool.slice(0, 4);
-    let correct = selected[0];
-    let flagCode = correct.cca2.toLowerCase();
-
-    return {
-        type: 'flag',
-        category: 'COUNTRY IDENTIFICATION',
-        question: 'Which country does this flag belong to?',
-        flagUrl: `https://flagcdn.com/w320/${flagCode}.png`,
-        answer: correct.name.common,
-        options: selected.map(c => c.name.common)
-    };
 }
 
 function loadQuestion() {
@@ -104,17 +58,6 @@ function loadQuestion() {
     document.getElementById('progress-indicator').innerText = `${currentQuestionIndex + 1} / 5`;
     document.getElementById('category-tag').innerText = q.category;
     document.getElementById('question-text').innerText = q.question;
-
-    const mediaContainer = document.getElementById('media-container');
-    const quizImg = document.getElementById('quiz-image');
-
-    if (q.type === 'flag') {
-        quizImg.src = q.flagUrl;
-        mediaContainer.classList.remove('hidden');
-    } else {
-        mediaContainer.classList.add('hidden');
-        quizImg.src = '';
-    }
 
     const grid = document.getElementById('options-grid');
     grid.innerHTML = '';
@@ -140,10 +83,10 @@ function handleAnswer(selectedOpt, q, clickedBtn, grid) {
         roundScore++;
         if (window.confetti) confetti({ particleCount: 30, spread: 50, origin: { y: 0.6 } });
 
-        // Save solved question to device memory so it NEVER repeats in future games
-        if (q.question && !solvedQuestions.includes(q.question)) {
-            solvedQuestions.push(q.question);
-            localStorage.setItem('solvedShowdownTrivia', JSON.stringify(solvedQuestions));
+        // Save question ID permanently into localStorage so it never repeats
+        if (q.id && !solvedQuestions.includes(q.id)) {
+            solvedQuestions.push(q.id);
+            localStorage.setItem('solvedShowdownTriviaIDs', JSON.stringify(solvedQuestions));
         }
     } else {
         clickedBtn.classList.add('incorrect');
