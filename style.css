@@ -1,21 +1,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&display=swap');
 
 :root {
-    --bg: #0b0c10;
-    --card-bg: #1f2833;
-    --text: #ffffff;
-    --neon-pink: #ff007f;
-    --neon-cyan: #00f0ff;
-    --neon-yellow: #ffe600;
-    --neon-purple: #b500ff;
-    --neon-green: #39ff14;
-    --neon-red: #ff3333;
+    --bg-color: #0d0914;           /* Deep dark purple background */
+    --card-bg: #181124;           /* Solid card background */
+    --purple-border: #8b5cf6;     /* Deep purple accent border */
+    --purple-hover: #261a38;      /* Slightly lighter purple for button hover */
+    --lime-green: #84cc16;        /* Bright lime green for correct/accents */
+    --text-main: #ffffff;
+    --text-sub: #cbd5e1;
 }
 
 body {
-    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
-    background-color: var(--bg);
-    color: var(--text);
+    font-family: 'Outfit', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-main);
     margin: 0;
     padding: 0;
     min-height: 100vh;
@@ -26,57 +24,53 @@ body {
 
 .app-container {
     width: 100%;
-    max-width: 620px;
+    max-width: 640px;
     padding: 16px;
     box-sizing: border-box;
 }
 
 .hidden { display: none !important; }
 
-/* Hero Card (Start & Finish Screens) */
+/* Setup & Summary Hero Card */
 .hero-card {
     background: var(--card-bg);
-    border: 3px solid var(--neon-cyan);
-    border-radius: 20px;
+    border: 3px solid var(--purple-border);
+    border-radius: 16px;
     padding: 35px 25px;
     text-align: center;
-    box-shadow: 0 0 20px rgba(0, 240, 255, 0.25);
 }
 
 .hero-card h1 {
-    font-size: 2.4rem;
+    font-size: 2.2rem;
     font-weight: 900;
     margin: 0 0 10px 0;
-    color: var(--neon-yellow);
-    text-shadow: 0 0 10px rgba(255, 230, 0, 0.4);
+    color: var(--lime-green);
 }
 
 .hero-card p {
-    color: #c5c6c7;
+    color: var(--text-sub);
     font-size: 1.1rem;
     margin-bottom: 25px;
 }
 
 .primary-btn {
-    background: var(--neon-pink);
-    color: #ffffff;
+    background: var(--lime-green);
+    color: #0d0914;
     border: none;
-    border-radius: 14px;
+    border-radius: 12px;
     padding: 18px;
-    font-size: 1.3rem;
-    font-weight: 800;
+    font-size: 1.25rem;
+    font-weight: 900;
     cursor: pointer;
     width: 100%;
     text-transform: uppercase;
-    box-shadow: 0 0 15px rgba(255, 0, 127, 0.4);
-    transition: transform 0.1s ease, box-shadow 0.2s ease;
 }
 
 .primary-btn:active {
-    transform: scale(0.97);
+    transform: scale(0.98);
 }
 
-/* Header & Status Pill Badges */
+/* Header Pills */
 .top-bar {
     display: flex;
     justify-content: space-between;
@@ -84,40 +78,37 @@ body {
 }
 
 .badge {
-    background: rgba(0, 0, 0, 0.6);
-    border: 2px solid var(--neon-cyan);
-    color: var(--neon-cyan);
+    background: var(--card-bg);
+    border: 2px solid var(--purple-border);
+    color: var(--lime-green);
     padding: 6px 16px;
     border-radius: 20px;
     font-size: 0.95rem;
     font-weight: 800;
 }
 
-/* Flag & Country Image Container */
+/* Flag & Image Box */
 .media-container {
-    background: rgba(0, 0, 0, 0.5);
-    border: 3px solid var(--neon-pink);
+    background: var(--card-bg);
+    border: 3px solid var(--purple-border);
     border-radius: 16px;
     padding: 15px;
     text-align: center;
-    box-shadow: 0 0 15px rgba(255, 0, 127, 0.3);
 }
 
 .media-container img {
-    max-width: 200px;
+    max-width: 220px;
     height: auto;
     border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
 }
 
-/* Gameboard Structure */
+/* 2x2 Options Grid Positioned ABOVE Question */
 .gameboard {
     display: flex;
     flex-direction: column;
     gap: 14px;
 }
 
-/* 2x2 Multiple Choice Grid ABOVE Question */
 .options-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -125,50 +116,41 @@ body {
 }
 
 .option-btn {
-    background: #121820;
-    color: #ffffff;
+    background: var(--card-bg);
+    color: var(--text-main);
     padding: 22px 14px;
     border-radius: 14px;
     font-size: 1.15rem;
     font-weight: 800;
     cursor: pointer;
     text-align: center;
-    border: 3px solid var(--border-color, var(--neon-cyan));
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-    transition: transform 0.1s ease;
+    border: 3px solid var(--purple-border); /* Uniform purple border for all 4 options */
+    transition: background 0.15s ease;
 }
 
-/* 4 Distinct Neon Accent Colors for the Buttons */
-.option-btn:nth-child(1) { --border-color: var(--neon-cyan); }
-.option-btn:nth-child(2) { --border-color: var(--neon-pink); }
-.option-btn:nth-child(3) { --border-color: var(--neon-yellow); }
-.option-btn:nth-child(4) { --border-color: var(--neon-purple); }
-
-.option-btn:active:not(:disabled) {
-    transform: scale(0.96);
+.option-btn:hover:not(:disabled) {
+    background: var(--purple-hover);
 }
 
 .option-btn.correct {
-    background: var(--neon-green) !important;
-    color: #000000 !important;
-    border-color: var(--neon-green) !important;
-    box-shadow: 0 0 20px var(--neon-green) !important;
+    background: var(--lime-green) !important;
+    color: #0d0914 !important;
+    border-color: var(--lime-green) !important;
 }
 
 .option-btn.incorrect {
-    background: var(--neon-red) !important;
+    background: #ef4444 !important;
     color: #ffffff !important;
-    border-color: var(--neon-red) !important;
-    opacity: 0.6;
+    border-color: #ef4444 !important;
+    opacity: 0.7;
 }
 
-/* Question Box Positioned at the BOTTOM */
+/* Question Box Positioned at Bottom */
 .question-box {
     background: var(--card-bg);
-    border: 3px solid var(--neon-yellow);
+    border: 3px solid var(--purple-border);
     border-radius: 16px;
-    padding: 20px;
-    box-shadow: 0 0 15px rgba(255, 230, 0, 0.2);
+    padding: 22px;
 }
 
 .category-tag {
@@ -176,8 +158,8 @@ body {
     font-size: 0.85rem;
     font-weight: 800;
     text-transform: uppercase;
-    color: var(--neon-cyan);
-    margin-bottom: 6px;
+    color: var(--lime-green);
+    margin-bottom: 8px;
 }
 
 .question-box h2 {
@@ -185,20 +167,19 @@ body {
     font-weight: 700;
     margin: 0;
     line-height: 1.4;
+    color: var(--text-main);
 }
 
-/* Round Summary Display */
+/* Summary Score */
 .summary-score {
     font-size: 3.2rem;
     font-weight: 900;
-    color: var(--neon-green);
+    color: var(--lime-green);
     margin: 15px 0;
-    text-shadow: 0 0 15px rgba(57, 255, 20, 0.4);
 }
 
 .feedback-text {
-    color: var(--neon-cyan);
-    font-size: 1.15rem;
-    font-weight: 700;
+    color: var(--text-sub);
+    font-size: 1.1rem;
     margin-bottom: 25px;
 }
