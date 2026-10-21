@@ -1,41 +1,3 @@
-// --- MASTER DATA FOR LIST ROUNDS (Embedded directly to prevent loading issues) ---
-const listMasterData = {
-    englishCounties: {
-        category: "Geography",
-        promptLetter: ["B", "S", "W", "C", "N", "L", "Y"],
-        data: {
-            "B": ["Bedfordshire", "Berkshire", "Buckinghamshire", "Bristol"],
-            "S": ["Shropshire", "Somerset", "Staffordshire", "Suffolk", "Surrey", "Sussex"],
-            "W": ["Warwickshire", "Westmorland", "Wiltshire", "Worcestershire"],
-            "C": ["Cambridgeshire", "Cheshire", "Cornwall", "Cumberland"],
-            "N": ["Norfolk", "Northamptonshire", "Northumberland", "Nottinghamshire"],
-            "L": ["Lancashire", "Leicestershire", "Lincolnshire"],
-            "Y": ["Yorkshire"]
-        }
-    },
-    europeanCountries: {
-        category: "Geography",
-        promptLetter: ["S", "F", "B", "A", "M"],
-        data: {
-            "S": ["Spain", "Sweden", "Switzerland", "Slovakia", "Slovenia", "Serbia"],
-            "F": ["France", "Finland"],
-            "B": ["Belgium", "Bulgaria", "Belarus", "Bosnia and Herzegovina"],
-            "A": ["Austria", "Albania", "Andorra"],
-            "M": ["Monaco", "Montenegro", "Moldova", "Malta"]
-        }
-    },
-    usStates: {
-        category: "Geography",
-        promptLetter: ["M", "N", "C", "P"],
-        data: {
-            "M": ["Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana"],
-            "N": ["Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota"],
-            "C": ["California", "Colorado", "Connecticut"],
-            "P": ["Pennsylvania"]
-        }
-    }
-};
-
 // --- AUDIO SYNTH ---
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 function playSound(type) {
@@ -120,7 +82,6 @@ async function startNewRound() {
 
             currentRoundQuestions = [...triviaBatch, listChallenge, flagChallenge];
             
-            // Calculate total points available for this round
             currentRoundQuestions.forEach(q => {
                 currentRoundAvailable += q.pointsAvailable;
             });
@@ -132,11 +93,7 @@ async function startNewRound() {
         }
     } catch (error) {
         console.error("API Error:", error);
-        // Fallback if API is offline: generate pure list challenge round
-        let fallbackList = [generateRandomListChallenge(), generateRandomListChallenge(), generateRandomListChallenge(), generateRandomListChallenge(), generateRandomListChallenge()];
-        currentRoundQuestions = fallbackList;
-        currentRoundQuestions.forEach(q => currentRoundAvailable += q.pointsAvailable);
-        loadQuestion();
+        setTimeout(startNewRound, 1500);
     }
 }
 
@@ -163,7 +120,7 @@ async function generateFlagChallenge() {
     }
 }
 
-// --- LIST CHALLENGE ---
+// --- LIST CHALLENGE (Uses listMasterData from questions.js) ---
 function generateRandomListChallenge() {
     const listTypes = ['englishCounties', 'europeanCountries', 'usStates'];
     let chosenKey = listTypes[Math.floor(Math.random() * listTypes.length)];
