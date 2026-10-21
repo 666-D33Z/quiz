@@ -1,9 +1,9 @@
-// Master Data for Dynamic List Challenges
+// Master Data & Rule Definitions (Clean & Verified)
 const listMasterData = {
     englishCounties: {
-        category: "Geography",
+        category: "Geography - Counties",
         promptLetter: ["B", "S", "W", "C", "N", "L", "Y"],
-        // Data maps letters to known counties
+        titleName: "English Counties",
         data: {
             "B": ["Bedfordshire", "Berkshire", "Buckinghamshire", "Bristol"],
             "S": ["Shropshire", "Somerset", "Staffordshire", "Suffolk", "Surrey", "Sussex"],
@@ -15,24 +15,30 @@ const listMasterData = {
         }
     },
     europeanCountries: {
-        category: "Geography",
-        promptLetter: ["S", "F", "B", "A", "M"],
+        category: "Geography - Europe",
+        promptLetter: ["S", "F", "B", "A", "M", "I", "G"],
+        titleName: "European Countries",
         data: {
             "S": ["Spain", "Sweden", "Switzerland", "Slovakia", "Slovenia", "Serbia"],
             "F": ["France", "Finland"],
             "B": ["Belgium", "Bulgaria", "Belarus", "Bosnia and Herzegovina"],
             "A": ["Austria", "Albania", "Andorra"],
-            "M": ["Monaco", "Montenegro", "Moldova", "Malta"]
+            "M": ["Monaco", "Montenegro", "Moldova", "Malta"],
+            "I": ["Italy", "Ireland", "Iceland"],
+            "G": ["Germany", "Greece"]
         }
     },
     usStates: {
-        category: "Geography",
-        promptLetter: ["M", "N", "C", "P"],
+        category: "Geography - US States",
+        promptLetter: ["M", "N", "C", "P", "T", "V"],
+        titleName: "US States",
         data: {
             "M": ["Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana"],
             "N": ["Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota"],
             "C": ["California", "Colorado", "Connecticut"],
-            "P": ["Pennsylvania"]
+            "P": ["Pennsylvania"],
+            "T": ["Texas", "Tennessee"],
+            "V": ["Virginia", "Vermont"]
         }
     }
 };
