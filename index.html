@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Table Showdown Pro</title>
-    <link rel="stylesheet" href="style.css?v=3">
+    <link rel="stylesheet" href="style.css?v=6">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
@@ -13,7 +13,7 @@
         <section id="setup-screen" class="screen">
             <div class="hero-card">
                 <h1>TABLE SHOWDOWN</h1>
-                <p>Infinite Family General Knowledge & Flag Identification.</p>
+                <p>Infinite Family General Knowledge Trivia.</p>
                 <button class="primary-btn" onclick="startGame()">START SESSION</button>
             </div>
         </section>
@@ -26,15 +26,10 @@
             </header>
 
             <div class="gameboard">
-                <!-- Visual / Flag Display Area -->
-                <div id="media-container" class="media-container hidden">
-                    <img id="quiz-image" src="" alt="Country Flag">
-                </div>
-
-                <!-- 2x2 Options Grid (Positioned ABOVE Question) -->
+                <!-- 2x2 Options Grid Positioned ABOVE Question -->
                 <div id="options-grid" class="options-grid"></div>
 
-                <!-- Question Box (Positioned at BOTTOM) -->
+                <!-- Question Box Positioned at BOTTOM -->
                 <div class="question-box">
                     <span id="category-tag" class="category-tag">General Knowledge</span>
                     <h2 id="question-text">Loading question...</h2>
@@ -47,13 +42,13 @@
             <div class="hero-card">
                 <h2>ROUND COMPLETE</h2>
                 <div id="summary-score" class="summary-score">0 / 5</div>
-                <p id="adaptive-feedback" class="feedback-text">Analyzing team performance...</p>
+                <p id="adaptive-feedback" class="feedback-text">Analyzing performance...</p>
                 <button class="primary-btn" onclick="startNextRound()">NEXT ROUND ➡️</button>
             </div>
         </section>
     </div>
 
-    <script src="questions.js?v=3"></script>
-    <script src="app.js?v=5"></script>
+    <script src="questions.js?v=6"></script>
+    <script src="app.js?v=6"></script>
 </body>
 </html>
