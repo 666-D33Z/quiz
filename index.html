@@ -3,82 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚡ DINNER SHOWDOWN ⚡</title>
+    <title>Table Showdown</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Confetti Library -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <!-- Leaflet Map Library CSS & JS for Map Questions -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1 class="glow-title">⚡ TABLE SHOWDOWN ⚡</h1>
-            <p class="tagline">🔥 TEAM TRIVIA, FLAGS & MAPS 🔥</p>
-        </header>
-
+    <div class="app-container">
         <!-- Setup Screen -->
         <section id="setup-screen" class="screen">
-            <div class="card text-center">
-                <h2>🍽️ FAMILY TABLE SQUAD</h2>
-                <p>One team taking on the infinite trivia, flag, and map engine together!</p>
-                <button class="btn main-btn" onclick="startGame()">🚀 START THE SHOW!</button>
+            <div class="hero-card">
+                <h1>Table Showdown</h1>
+                <p>Infinite General Knowledge, Flags, & Country Identification.</p>
+                <button class="primary-btn" onclick="startGame()">Start Session</button>
             </div>
         </section>
 
         <!-- Quiz Screen -->
         <section id="quiz-screen" class="screen hidden">
-            <div class="quiz-status-bar">
-                <span id="round-info" class="pill glow-pill">ROUND 1</span>
-                <span id="question-tracker" class="pill glow-pill">QUESTION 1/5</span>
-            </div>
+            <header class="top-bar">
+                <span id="round-indicator" class="badge">Round 1</span>
+                <span id="progress-indicator" class="badge">1 / 5</span>
+            </header>
 
-            <div class="progress-bar-container">
-                <div id="progress-bar" class="progress-bar"></div>
-            </div>
-
-            <div class="card">
-                <div class="badges">
-                    <span id="category-badge" class="badge">General</span>
-                    <span id="type-badge" class="badge type-badge">Trivia</span>
+            <div class="gameboard">
+                <!-- Visual / Image Display Area (for flags/countries) -->
+                <div id="media-container" class="media-container hidden">
+                    <img id="quiz-image" src="" alt="Quiz Visual">
                 </div>
-                <h2 id="question-text" class="arcade-text">Loading question...</h2>
-                
-                <!-- Map Container for Map Questions -->
-                <div id="map-container" class="hidden" style="width: 100%; height: 220px; border-radius: 12px; margin-bottom: 15px; border: 3px solid var(--neon-blue);"></div>
 
-                <!-- Multiple Choice Container -->
-                <div id="mc-container" class="mc-grid hidden"></div>
+                <!-- 2x2 Options Grid (Positioned Above) -->
+                <div id="options-grid" class="options-grid"></div>
 
-                <!-- List Challenge Container -->
-                <div id="list-container" class="hidden">
-                    <button class="btn secondary-btn" onclick="toggleListAnswer()">📋 REVEAL ANSWERS</button>
-                    <div id="list-answer-box" class="answer-box hidden">
-                        <span class="answer-label">POSSIBLE ANSWERS:</span>
-                        <p id="list-answer-text">Answer goes here</p>
-                    </div>
+                <!-- Question Box (Positioned at Bottom) -->
+                <div class="question-box">
+                    <span id="category-tag" class="category-tag">General Knowledge</span>
+                    <h2 id="question-text">Loading question...</h2>
                 </div>
             </div>
-
-            <!-- Team Point Tally for List Rounds -->
-            <div id="score-section" class="score-section hidden">
-                <h3 id="score-instruction">🏆 TEAM POINTS COLLECTED:</h3>
-                <div class="team-score-controls">
-                    <button class="btn main-btn" onclick="addTeamPoint()">+1 Point For The Team! 🎯</button>
-                    <p id="list-current-tally" class="tally-display">Points earned this question: 0</p>
-                </div>
-            </div>
-
-            <button id="next-btn" class="btn main-btn hidden" onclick="nextQuestion()">NEXT QUESTION ➡️</button>
         </section>
 
         <!-- Summary Screen -->
         <section id="summary-screen" class="screen hidden">
-            <div class="card text-center">
-                <h2 class="glow-title">🎉 ROUND COMPLETE! 🎉</h2>
-                <div id="scoreboard" class="scoreboard-display"></div>
-                <button class="btn main-btn" onclick="startNextRound()">NEXT ROUND 🚀</button>
+            <div class="hero-card">
+                <h2>Round Complete</h2>
+                <div id="summary-score" class="summary-score">0 / 5</div>
+                <p id="adaptive-feedback" class="feedback-text">Analyzing performance...</p>
+                <button class="primary-btn" onclick="startNextRound()">Continue Session</button>
             </div>
         </section>
     </div>
