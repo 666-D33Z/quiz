@@ -39,6 +39,7 @@ let solvedQuestions = JSON.parse(localStorage.getItem('solvedTriviaQuestions')) 
 
 function startGame() {
     playSound('correct');
+    // Force hide setup and show quiz screen immediately
     document.getElementById('setup-screen').classList.add('hidden');
     document.getElementById('quiz-screen').classList.remove('hidden');
     startNewRound();
@@ -53,7 +54,7 @@ async function startNewRound() {
     if (currentRound >= 3 && currentRound < 5) currentDifficulty = 'medium';
     else if (currentRound >= 5) currentDifficulty = 'hard';
 
-    document.getElementById('question-text').innerText = `⚡ Fetching ${currentDifficulty.toUpperCase()} team challenges...`;
+    document.getElementById('question-text').innerText = `⚡ Loading Round ${currentRound}...`;
     document.getElementById('mc-container').innerHTML = '';
 
     try {
@@ -78,57 +79,73 @@ async function startNewRound() {
             });
 
             let listChallenge = generateRandomListChallenge();
-            let flagChallenge = await generateFlagChallenge();
+            
+            // Try fetching a flag, but fallback safely if it fails
+            let flagChallenge;
+            try {
+                flagChallenge = await generateFlagChallenge();
+            } catch (e) {
+                flagChallenge = generateRandomListChallenge();
+            }
 
             currentRoundQuestions = [...triviaBatch, listChallenge, flagChallenge];
-            
-            currentRoundQuestions.forEach(q => {
-                currentRoundAvailable += q.pointsAvailable;
-            });
-
-            shuffleArray(currentRoundQuestions);
-            loadQuestion();
         } else {
-            setTimeout(startNewRound, 1500);
+            throw new Error("No API results");
         }
     } catch (error) {
-        console.error("API Error:", error);
-        setTimeout(startNewRound, 1500);
+        console.warn("API fallback triggered:", error);
+        // Instant offline backup so the game never freezes
+        currentRoundQuestions = [
+            generateRandomListChallenge(),
+            { type: "mc", category: "General", question: "What color is a polar bear's skin?", answer: "Black", options: ["White", "Black", "Pink", "Brown"], pointsAvailable: 1 },
+            { type: "mc", category: "Science", question: "What is the chemical symbol for gold?", answer: "Au", options: ["Ag", "Go", "Au", "Gd"], pointsAvailable: 1 },
+            generateRandomListChallenge(),
+            { type: "mc", category: "Geography", question: "Which country has the most natural lakes?", answer: "Canada", options: ["USA", "Russia", "Canada", "Australia"], pointsAvailable: 1 }
+        ];
     }
+
+    currentRoundQuestions.forEach(q => {
+        currentRoundAvailable += q.pointsAvailable;
+    });
+
+    shuffleArray(currentRoundQuestions);
+    loadQuestion();
 }
 
 // --- FLAG CHALLENGE ---
 async function generateFlagChallenge() {
-    try {
-        let res = await fetch('https://restcountries.com/3.1/all?fields=name,flags');
-        let countries = await res.json();
-        shuffleArray(countries);
-        let selected = countries.slice(0, 4);
-        let correctCountry = selected[0];
+    let res = await fetch('https://restcountries.com/3.1/all?fields=name,flags');
+    let countries = await res.json();
+    shuffleArray(countries);
+    let selected = countries.slice(0, 4);
+    let correctCountry = selected[0];
 
-        return {
-            type: "flag",
-            category: "Geography Picture Round",
-            question: "🚩 PICTURE ROUND: Which country does this flag belong to?",
-            flagUrl: correctCountry.flags.png,
-            answer: correctCountry.name.common,
-            options: selected.map(c => c.name.common),
-            pointsAvailable: 1
-        };
-    } catch (err) {
-        return generateRandomListChallenge();
-    }
+    return {
+        type: "flag",
+        category: "Geography Picture Round",
+        question: "🚩 PICTURE ROUND: Which country does this flag belong to?",
+        flagUrl: correctCountry.flags.png,
+        answer: correctCountry.name.common,
+        options: selected.map(c => c.name.common),
+        pointsAvailable: 1
+    };
 }
 
-// --- LIST CHALLENGE (Uses listMasterData from questions.js) ---
+// --- LIST CHALLENGE ---
 function generateRandomListChallenge() {
-    const listTypes = ['englishCounties', 'europeanCountries', 'usStates'];
+    // Safety check in case listMasterData isn't loaded yet
+    const fallbackMaster = {
+        englishCounties: { category: "Geography", promptLetter: ["B", "S"], data: { "B": ["Bedfordshire", "Berkshire"], "S": ["Somerset", "Surrey"] } }
+    };
+    const master = (typeof listMasterData !== 'undefined') ? listMasterData : fallbackMaster;
+
+    const listTypes = Object.keys(master);
     let chosenKey = listTypes[Math.floor(Math.random() * listTypes.length)];
-    let listObj = listMasterData[chosenKey];
+    let listObj = master[chosenKey];
 
     let randomLetter = listObj.promptLetter[Math.floor(Math.random() * listObj.promptLetter.length)];
     let validAnswers = listObj.data[randomLetter];
-    let titleName = chosenKey === 'englishCounties' ? "English Counties" : chosenKey === 'europeanCountries' ? "European Countries" : "US States";
+    let titleName = chosenKey === 'englishCounties' ? "English Counties" : "European Countries";
 
     return {
         type: "list",
